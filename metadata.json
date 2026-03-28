@@ -1,0 +1,7 @@
+{
+  "name": "FişAI - Akıllı Fiş Takibi",
+  "description": "Gemini AI destekli, bütçe yönetimli ve Google Sheets entegreli akıllı fiş tarama uygulaması.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
