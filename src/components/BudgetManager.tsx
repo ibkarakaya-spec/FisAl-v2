@@ -11,7 +11,6 @@ import {
   Settings,
   X
 } from 'lucide-react';
-import { appendToGoogleSheet } from '../services/sheetService.ts';
 import { getCategoryColor } from './ReceiptTable.tsx';
 
 interface Props {
@@ -22,7 +21,6 @@ interface Props {
   onAddReceipt: (receipt: ReceiptData) => void;
   onDeleteReceipt: (id: string) => void;
   onViewReceipt: (receipt: ReceiptData) => void;
-  webhookUrl?: string;
   exportMode?: 'detailed' | 'summary';
   selectedMonth: string;
   setSelectedMonth: (month: string) => void;
@@ -36,13 +34,11 @@ export const BudgetManager: React.FC<Props> = ({
   onAddReceipt, 
   onDeleteReceipt, 
   onViewReceipt, 
-  webhookUrl,
   selectedMonth,
   setSelectedMonth
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Hepsi');
   const [editingLimitCategory, setEditingLimitCategory] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [newCatName, setNewCatName] = useState("");
@@ -186,9 +182,6 @@ export const BudgetManager: React.FC<Props> = ({
         <div className="flex gap-1">
           <button onClick={() => setShowTransfer(true)} className="p-1.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-lg border border-indigo-100 dark:border-indigo-900/30"><Repeat size={14} /></button>
           <button onClick={() => setShowManageCategories(true)} className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded-lg border border-slate-200 dark:border-slate-700"><Settings size={14} /></button>
-          <button onClick={async () => { setIsSyncing(true); await appendToGoogleSheet(webhookUrl || '', currentMonthReceipts, activeMonthKey); setIsSyncing(false); }} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-bold uppercase">
-            {isSyncing ? <Loader2 size={12} className="animate-spin" /> : 'AKTAR'}
-          </button>
         </div>
       </div>
 

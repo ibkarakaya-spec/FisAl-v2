@@ -1,18 +1,21 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud, RotateCw
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, LogIn, LogOut
 } from 'lucide-react';
+import { auth, db } from './firebase.ts';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
 import { ReceiptTable } from './components/ReceiptTable.tsx';
 import { ReceiptDetailModal } from './components/ReceiptDetailModal.tsx';
 import { ProductHistory } from './components/ProductHistory.tsx';
-import { appendToGoogleSheet, uploadImageToDrive, importAllFromWebhook, exportAllToWebhook } from './services/sheetService.ts';
 import { BudgetManager } from './components/BudgetManager.tsx';
 import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'prices' | 'budget'>('dashboard');
@@ -27,8 +30,6 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem('app_theme') as ThemeMode) || 'system');
   const [showSettings, setShowSettings] = useState(false);
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-  const [sheetWebhookUrl, setSheetWebhookUrl] = useState<string>(localStorage.getItem('sheet_webhook_url') || '');
-  const [driveSyncEnabled, setDriveSyncEnabled] = useState<boolean>(() => localStorage.getItem('drive_sync_enabled') === 'true');
   
   const [dashboardMonth, setDashboardMonth] = useState<string>(() => {
     return localStorage.getItem('app_last_selected_month') || "Hepsi";
@@ -36,32 +37,6 @@ const App: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [driveImportUrl, setDriveImportUrl] = useState<string>('');
-  const [webhookImportUrl, setWebhookImportUrl] = useState<string>(localStorage.getItem('webhook_import_url') || '');
-
-  useEffect(() => {
-    localStorage.setItem('webhook_import_url', webhookImportUrl);
-  }, [webhookImportUrl]);
-
-  const handleWebhookImport = async () => {
-    if (!webhookImportUrl) return;
-    const data = await importAllFromWebhook(webhookImportUrl);
-    if (data && Array.isArray(data)) {
-      setReceipts(prev => [...prev, ...data]);
-      alert("Webhook'tan veriler başarıyla içe aktarıldı.");
-    } else {
-      alert("Webhook'tan veri çekilemedi.");
-    }
-  };
-
-  const handleWebhookExport = async () => {
-    const success = await exportAllToWebhook(sheetWebhookUrl, receipts);
-    if (success) {
-      alert("Tüm veriler başarıyla webhook'a aktarıldı.");
-    } else {
-      alert("Webhook'a aktarım başarısız oldu.");
-    }
-  };
 
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,39 +57,33 @@ const App: React.FC = () => {
     if (importInputRef.current) importInputRef.current.value = '';
   };
 
-  const handleImportFromDrive = async () => {
-    if (!driveImportUrl) return;
-    try {
-      const response = await fetch(driveImportUrl);
-      const imported = await response.json();
-      if (Array.isArray(imported)) {
-        setReceipts(prev => [...prev, ...imported]);
-        alert("Google Drive'dan veriler başarıyla içe aktarıldı.");
-      } else {
-        alert("Dosya içeriği geçerli bir fiş listesi değil.");
-      }
-    } catch (e) {
-      alert("Google Drive'dan veri çekilemedi. Bağlantının herkese açık olduğundan emin olun.");
-    }
-  };
-
   const activeReceipts = useMemo(() => {
     return receipts.filter(r => categories.includes(r.category));
   }, [receipts, categories]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('fis_ai_receipts');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setReceipts(Array.isArray(parsed) ? parsed : []);
-      }
-    } catch (e) {
-      setInitError(true);
-    } finally {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setIsInitializing(false);
-    }
+    });
+    return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setReceipts([]);
+      return;
+    }
+    const q = query(collection(db, 'receipts'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newReceipts: ReceiptData[] = [];
+      snapshot.forEach((doc) => {
+        newReceipts.push({ ...doc.data() as ReceiptData, id: doc.id });
+      });
+      setReceipts(newReceipts);
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     localStorage.setItem('app_categories', JSON.stringify(categories));
@@ -156,12 +125,10 @@ const App: React.FC = () => {
       } else {
         localStorage.setItem('fis_ai_receipts', dataToSave);
       }
-      localStorage.setItem('drive_sync_enabled', String(driveSyncEnabled));
-      localStorage.setItem('sheet_webhook_url', sheetWebhookUrl);
     } catch (e) {
       console.error("Storage Error", e);
     }
-  }, [receipts, sheetWebhookUrl, driveSyncEnabled, isInitializing, initError]);
+  }, [receipts, isInitializing, initError]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -184,16 +151,6 @@ const App: React.FC = () => {
       setStatusText('Analiz Ediliyor...');
       const data = await extractReceiptData(optimizedImg, categories);
       
-      let driveUrl = undefined;
-      let finalLocalImage: string | undefined = optimizedImg;
-
-      if (driveSyncEnabled && sheetWebhookUrl) {
-        setStatusText('Yedekleniyor...');
-        const fileName = `FIS_${Date.now()}.jpg`;
-        driveUrl = await uploadImageToDrive(sheetWebhookUrl, optimizedImg, fileName) || undefined;
-        if (driveUrl) finalLocalImage = undefined;
-      }
-
       const newReceipt: ReceiptData = {
         id: Math.random().toString(36).substr(2, 9),
         vendor: (data.vendor || 'BİLİNMEYEN').toUpperCase(),
@@ -205,15 +162,13 @@ const App: React.FC = () => {
         items: data.items || [],
         confidence: 1,
         timestamp: Date.now(),
-        imageUrl: finalLocalImage,
-        driveUrl: driveUrl
+        imageUrl: optimizedImg,
       };
       
-      setReceipts(prev => [newReceipt, ...prev]);
-      
-      if (sheetWebhookUrl) {
-        setStatusText('Aktarılıyor...');
-        await appendToGoogleSheet(sheetWebhookUrl, [newReceipt], dashboardMonth);
+      if (user) {
+        await addDoc(collection(db, 'receipts'), { ...newReceipt, userId: user.uid });
+      } else {
+        setReceipts(prev => [newReceipt, ...prev]);
       }
     } catch (err) {
       alert(`Okuma Hatası: Lütfen fişi tekrar çekin.`);
@@ -224,7 +179,7 @@ const App: React.FC = () => {
     if (!e.target.files?.length) return;
     const files = Array.from(e.target.files) as File[];
     setStatus(AppStatus.PROCESSING);
-    for (const file of files) await processFile(file);
+    await Promise.all(files.map(processFile));
     setStatus(AppStatus.IDLE);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -311,10 +266,21 @@ const App: React.FC = () => {
                 categories={categories}
                 setCategories={setCategories}
                 availableMonths={availableMonths} 
-                onAddReceipt={r => setReceipts(x => [r, ...x])} 
-                onDeleteReceipt={id => setReceipts(p => p.filter(r => r.id !== id))} 
+                onAddReceipt={async (r) => {
+                  if (user) {
+                    await addDoc(collection(db, 'receipts'), { ...r, userId: user.uid });
+                  } else {
+                    setReceipts(x => [r, ...x]);
+                  }
+                }}
+                onDeleteReceipt={async (id) => {
+                  if (user) {
+                    await deleteDoc(doc(db, 'receipts', id));
+                  } else {
+                    setReceipts(p => p.filter(r => r.id !== id));
+                  }
+                }}
                 onViewReceipt={setSelectedReceipt} 
-                webhookUrl={sheetWebhookUrl} 
                 selectedMonth={dashboardMonth}
                 setSelectedMonth={setDashboardMonth}
               />
@@ -329,35 +295,19 @@ const App: React.FC = () => {
                   <button onClick={() => setShowSettings(false)} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full"><X size={20} /></button>
                 </div>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Google Sheets Webhook</label>
-                    <input className="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-4 rounded-2xl text-xs font-bold outline-none" value={sheetWebhookUrl} onChange={e => setSheetWebhookUrl(e.target.value)} />
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    {user ? (
+                      <button onClick={() => signOut(auth)} className="w-full py-4 text-red-500 bg-red-50 dark:bg-red-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                        <LogOut size={14} /> Çıkış Yap ({user.email})
+                      </button>
+                    ) : (
+                      <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                        <LogIn size={14} /> Google ile Giriş Yap
+                      </button>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                    <Cloud size={20} className="text-indigo-600" />
-                    <span className="text-[11px] font-bold uppercase">Drive Yedekleme</span>
-                    <button onClick={() => setDriveSyncEnabled(!driveSyncEnabled)} className={`w-12 h-6 rounded-full relative ${driveSyncEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}>
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${driveSyncEnabled ? 'right-1' : 'left-1'}`} />
-                    </button>
-                  </div>
-                  <button onClick={() => { if(confirm('Tüm veriler silinsin mi?')) resetEverything(); }} className="w-full py-4 text-red-500 bg-red-50 dark:bg-red-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Hafızayı Sıfırla</button>
                   <button onClick={() => importInputRef.current?.click()} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Dosyadan İçe Aktar</button>
                   <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
-                  
-                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Webhook URL</label>
-                    <input className="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-4 rounded-2xl text-xs font-bold outline-none" placeholder="https://..." value={webhookImportUrl} onChange={e => setWebhookImportUrl(e.target.value)} />
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={handleWebhookImport} className="py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Webhook'tan İçe Aktar</button>
-                      <button onClick={handleWebhookExport} className="py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Webhook'a Dışa Aktar</button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Google Drive JSON URL</label>
-                    <input className="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-4 rounded-2xl text-xs font-bold outline-none" placeholder="https://drive.google.com/..." value={driveImportUrl} onChange={e => setDriveImportUrl(e.target.value)} />
-                    <button onClick={handleImportFromDrive} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Drive'dan İçe Aktar</button>
-                  </div>
                 </div>
               </div>
             </div>
