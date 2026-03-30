@@ -35,6 +35,43 @@ const App: React.FC = () => {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [driveImportUrl, setDriveImportUrl] = useState<string>('');
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target?.result as string);
+        if (Array.isArray(imported)) {
+          setReceipts(prev => [...prev, ...imported]);
+          alert("Veriler başarıyla içe aktarıldı.");
+        }
+      } catch (e) {
+        alert("Geçersiz dosya formatı.");
+      }
+    };
+    reader.readAsText(file);
+    if (importInputRef.current) importInputRef.current.value = '';
+  };
+
+  const handleImportFromDrive = async () => {
+    if (!driveImportUrl) return;
+    try {
+      const response = await fetch(driveImportUrl);
+      const imported = await response.json();
+      if (Array.isArray(imported)) {
+        setReceipts(prev => [...prev, ...imported]);
+        alert("Google Drive'dan veriler başarıyla içe aktarıldı.");
+      } else {
+        alert("Dosya içeriği geçerli bir fiş listesi değil.");
+      }
+    } catch (e) {
+      alert("Google Drive'dan veri çekilemedi. Bağlantının herkese açık olduğundan emin olun.");
+    }
+  };
 
   const activeReceipts = useMemo(() => {
     return receipts.filter(r => categories.includes(r.category));
@@ -279,6 +316,13 @@ const App: React.FC = () => {
                     </button>
                   </div>
                   <button onClick={() => { if(confirm('Tüm veriler silinsin mi?')) resetEverything(); }} className="w-full py-4 text-red-500 bg-red-50 dark:bg-red-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Hafızayı Sıfırla</button>
+                  <button onClick={() => importInputRef.current?.click()} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Dosyadan İçe Aktar</button>
+                  <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Google Drive JSON URL</label>
+                    <input className="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-4 rounded-2xl text-xs font-bold outline-none" placeholder="https://drive.google.com/..." value={driveImportUrl} onChange={e => setDriveImportUrl(e.target.value)} />
+                    <button onClick={handleImportFromDrive} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Drive'dan İçe Aktar</button>
+                  </div>
                 </div>
               </div>
             </div>
