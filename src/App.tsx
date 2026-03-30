@@ -7,7 +7,7 @@ import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
 import { ReceiptTable } from './components/ReceiptTable.tsx';
 import { ReceiptDetailModal } from './components/ReceiptDetailModal.tsx';
 import { ProductHistory } from './components/ProductHistory.tsx';
-import { appendToGoogleSheet, uploadImageToDrive } from './services/sheetService.ts';
+import { appendToGoogleSheet, uploadImageToDrive, importAllFromWebhook, exportAllToWebhook } from './services/sheetService.ts';
 import { BudgetManager } from './components/BudgetManager.tsx';
 import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
@@ -37,6 +37,31 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const [driveImportUrl, setDriveImportUrl] = useState<string>('');
+  const [webhookImportUrl, setWebhookImportUrl] = useState<string>(localStorage.getItem('webhook_import_url') || '');
+
+  useEffect(() => {
+    localStorage.setItem('webhook_import_url', webhookImportUrl);
+  }, [webhookImportUrl]);
+
+  const handleWebhookImport = async () => {
+    if (!webhookImportUrl) return;
+    const data = await importAllFromWebhook(webhookImportUrl);
+    if (data && Array.isArray(data)) {
+      setReceipts(prev => [...prev, ...data]);
+      alert("Webhook'tan veriler başarıyla içe aktarıldı.");
+    } else {
+      alert("Webhook'tan veri çekilemedi.");
+    }
+  };
+
+  const handleWebhookExport = async () => {
+    const success = await exportAllToWebhook(sheetWebhookUrl, receipts);
+    if (success) {
+      alert("Tüm veriler başarıyla webhook'a aktarıldı.");
+    } else {
+      alert("Webhook'a aktarım başarısız oldu.");
+    }
+  };
 
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -318,6 +343,16 @@ const App: React.FC = () => {
                   <button onClick={() => { if(confirm('Tüm veriler silinsin mi?')) resetEverything(); }} className="w-full py-4 text-red-500 bg-red-50 dark:bg-red-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Hafızayı Sıfırla</button>
                   <button onClick={() => importInputRef.current?.click()} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Dosyadan İçe Aktar</button>
                   <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+                  
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Webhook URL</label>
+                    <input className="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-4 rounded-2xl text-xs font-bold outline-none" placeholder="https://..." value={webhookImportUrl} onChange={e => setWebhookImportUrl(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={handleWebhookImport} className="py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Webhook'tan İçe Aktar</button>
+                      <button onClick={handleWebhookExport} className="py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Webhook'a Dışa Aktar</button>
+                    </div>
+                  </div>
+
                   <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Google Drive JSON URL</label>
                     <input className="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 p-4 rounded-2xl text-xs font-bold outline-none" placeholder="https://drive.google.com/..." value={driveImportUrl} onChange={e => setDriveImportUrl(e.target.value)} />

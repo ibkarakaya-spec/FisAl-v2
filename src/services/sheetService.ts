@@ -6,7 +6,7 @@ export async function appendToGoogleSheet(webhookUrl: string, receipts: ReceiptD
   try {
     const response = await fetch(webhookUrl, {
       method: 'POST',
-      mode: 'no-cors', // Webhooklar genelde CORS desteklemez, no-cors ile gönderiyoruz
+      mode: 'no-cors',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -27,6 +27,36 @@ export async function appendToGoogleSheet(webhookUrl: string, receipts: ReceiptD
     return true;
   } catch (error) {
     console.error('Google Sheet Sync Error:', error);
+    return false;
+  }
+}
+
+export async function importAllFromWebhook(webhookUrl: string): Promise<ReceiptData[] | null> {
+  if (!webhookUrl) return null;
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.error('Webhook Import Error:', error);
+    return null;
+  }
+}
+
+export async function exportAllToWebhook(webhookUrl: string, receipts: ReceiptData[]) {
+  if (!webhookUrl) return false;
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'export', data: receipts })
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Webhook Export Error:', error);
     return false;
   }
 }
