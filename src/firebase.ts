@@ -9,6 +9,10 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+if (!firebaseConfig.apiKey) {
+  console.error("Firebase API Key is missing! Please set VITE_FIREBASE_API_KEY in your environment variables.");
+}
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID);

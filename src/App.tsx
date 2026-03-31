@@ -21,7 +21,10 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'prices' | 'budget'>('dashboard');
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [statusText, setStatusText] = useState<string>('');
-  const [receipts, setReceipts] = useState<ReceiptData[]>([]);
+  const [receipts, setReceipts] = useState<ReceiptData[]>(() => {
+    const saved = localStorage.getItem('fis_ai_receipts');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [categories, setCategories] = useState<string[]>(() => {
     const saved = localStorage.getItem('app_categories');
     return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
@@ -55,6 +58,22 @@ const App: React.FC = () => {
     };
     reader.readAsText(file);
     if (importInputRef.current) importInputRef.current.value = '';
+  };
+
+  const handleExportData = () => {
+    try {
+      const dataStr = JSON.stringify(receipts, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `fis_ai_backup_${new Date().toISOString().split('T')[0]}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    } catch (e) {
+      alert("Dışa aktarma hatası.");
+    }
   };
 
   const activeReceipts = useMemo(() => {
@@ -306,7 +325,10 @@ const App: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <button onClick={() => importInputRef.current?.click()} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Dosyadan İçe Aktar</button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => importInputRef.current?.click()} className="py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">İçe Aktar</button>
+                    <button onClick={handleExportData} className="py-4 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Dışa Aktar</button>
+                  </div>
                   <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
                 </div>
               </div>
