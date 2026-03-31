@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -9,10 +9,16 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-if (!firebaseConfig.apiKey) {
+export const isFirebaseConfigured = !!firebaseConfig.apiKey;
+
+if (!isFirebaseConfigured) {
   console.error("Firebase API Key is missing! Please set VITE_FIREBASE_API_KEY in your environment variables.");
 }
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app, import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID);
+// Initialize Firebase only if config is present and not already initialized
+const app = isFirebaseConfigured 
+  ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig))
+  : null;
+
+export const auth = app ? getAuth(app) : null as any;
+export const db = app ? getFirestore(app, import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID) : null as any;

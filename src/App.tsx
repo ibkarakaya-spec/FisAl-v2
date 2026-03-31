@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, LogIn, LogOut
 } from 'lucide-react';
-import { auth, db } from './firebase.ts';
+import { isFirebaseConfigured, auth, db } from './firebase.ts';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
@@ -81,6 +81,10 @@ const App: React.FC = () => {
   }, [receipts, categories]);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setIsInitializing(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsInitializing(false);
@@ -89,7 +93,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !isFirebaseConfigured) {
       setReceipts([]);
       return;
     }
@@ -223,6 +227,14 @@ const App: React.FC = () => {
           </header>
 
           <main className="max-w-xl mx-auto px-3 pt-3 space-y-3">
+            {!isFirebaseConfigured && (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-4">
+                <h2 className="text-amber-800 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest mb-1">Firebase Bağlantısı Eksik</h2>
+                <p className="text-amber-700 dark:text-amber-500 text-[11px] leading-relaxed">
+                  Uygulamanın çalışması için Firebase API anahtarları eksik. Lütfen ortam değişkenlerini (Environment Variables) yapılandırın.
+                </p>
+              </div>
+            )}
             {status === AppStatus.PROCESSING && (
               <div className="bg-indigo-600 rounded-xl p-3 text-white flex items-center justify-center gap-2 shadow-lg animate-pulse">
                  <Loader2 size={14} className="animate-spin" />
