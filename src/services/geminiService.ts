@@ -14,7 +14,7 @@ export const DEFAULT_CATEGORIES = [
 ];
 
 export async function extractReceiptData(base64Image: string, categories: string[]) {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-3.1-pro-preview";
   
   const prompt = `Bu fiş görselindeki verileri ayıkla. 
   Kategoriyi şu listeden seç: ${categories.join(', ')}.

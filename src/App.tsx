@@ -49,7 +49,19 @@ const App: React.FC = () => {
       try {
         const imported = JSON.parse(event.target?.result as string);
         if (Array.isArray(imported)) {
-          setReceipts(prev => [...prev, ...imported]);
+          const formattedReceipts: ReceiptData[] = imported.map((r: any) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            vendor: r.vendor || 'BİLİNMEYEN',
+            date: r.date || new Date().toLocaleDateString('tr-TR'),
+            total: typeof r.price === 'number' ? r.price : parseFloat(String(r.price).replace(',', '.')) || 0,
+            currency: '₺',
+            category: r.category || 'Gıda ve Market',
+            tax: 0,
+            items: [],
+            confidence: 1,
+            timestamp: Date.now(),
+          }));
+          setReceipts(prev => [...prev, ...formattedReceipts]);
           alert("Veriler başarıyla içe aktarıldı.");
         }
       } catch (e) {
