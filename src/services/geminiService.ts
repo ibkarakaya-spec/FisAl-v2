@@ -21,51 +21,51 @@ export async function extractReceiptData(base64Image: string, categories: string
   Tarih formatı GG.AA.YYYY olmalı.
   Tüm ürün isimlerini büyük harf yap.`;
 
-  const response = await ai.models.generateContent({
-    model,
-    contents: [
-      {
-        parts: [
-          { text: prompt },
-          {
-            inlineData: {
-              mimeType: "image/jpeg",
-              data: base64Image.split(',')[1] || base64Image
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: base64Image.split(',')[1] || base64Image
+              }
             }
-          }
-        ]
-      }
-    ],
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          vendor: { type: Type.STRING },
-          date: { type: Type.STRING },
-          total: { type: Type.NUMBER },
-          category: { type: Type.STRING },
-          items: {
-            type: Type.ARRAY,
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            vendor: { type: Type.STRING },
+            date: { type: Type.STRING },
+            total: { type: Type.NUMBER },
+            category: { type: Type.STRING },
             items: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING },
-                price: { type: Type.NUMBER },
-                quantity: { type: Type.NUMBER }
-              },
-              required: ["name", "price"]
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  price: { type: Type.NUMBER },
+                  quantity: { type: Type.NUMBER }
+                },
+                required: ["name", "price"]
+              }
             }
           }
         }
       }
-    }
-  });
-
-  try {
-    return JSON.parse(response.text || "{}");
+    });
+    const text = response.text || "{}";
+    return JSON.parse(text);
   } catch (e) {
-    console.error("Gemini parse error", e);
+    console.error("Gemini API error", e);
     return {};
   }
 }
