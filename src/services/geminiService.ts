@@ -19,6 +19,19 @@ export const DEFAULT_CATEGORIES = [
   'Mobilya'
 ];
 
+async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (e: any) {
+    if (retries > 0 && (e.message?.includes('429') || e.status === 429)) {
+      console.warn(`Rate limit hit, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retryWithBackoff(fn, retries - 1, delay * 2);
+    }
+    throw e;
+  }
+}
+
 export async function extractReceiptData(base64Image: string, categories: string[]) {
   const model = "gemini-3.1-pro-preview";
   
@@ -34,7 +47,7 @@ export async function extractReceiptData(base64Image: string, categories: string
   - Fişteki tüm kalemleri (ürünler, poşet, vergiler vb.) ürün listesine ekle.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await retryWithBackoff(() => ai.models.generateContent({
       model,
       contents: [
         {
@@ -73,7 +86,7 @@ export async function extractReceiptData(base64Image: string, categories: string
           }
         }
       }
-    });
+    }));
     const text = response.text || "{}";
     return JSON.parse(text);
   } catch (e) {
