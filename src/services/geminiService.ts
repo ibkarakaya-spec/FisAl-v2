@@ -19,7 +19,7 @@ export const DEFAULT_CATEGORIES = [
   'Mobilya'
 ];
 
-async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
   try {
     return await fn();
   } catch (e: any) {
@@ -33,7 +33,7 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, delay = 10
 }
 
 export async function extractReceiptData(base64Image: string, categories: string[]) {
-  const model = "gemini-3.1-pro-preview";
+  const model = "gemini-3-flash-preview";
   
   const prompt = `Bu fiş görselindeki verileri ayıkla. 
   Kategoriyi şu listeden seç: ${categories.join(', ')}.
