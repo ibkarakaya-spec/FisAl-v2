@@ -122,7 +122,7 @@ const App: React.FC = () => {
   }, [activeReceipts]);
 
   useEffect(() => {
-    if (isInitializing || initError) return;
+    if (isInitializing) return;
     try {
       const dataToSave = JSON.stringify(receipts);
       if (dataToSave.length > 4 * 1024 * 1024) {
@@ -134,7 +134,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.error("Storage Error", e);
     }
-  }, [receipts, isInitializing, initError]);
+  }, [receipts, isInitializing]);
 
   useEffect(() => {
     const root = window.document.documentElement;

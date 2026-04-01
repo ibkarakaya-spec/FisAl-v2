@@ -6,7 +6,7 @@ if (!apiKey) {
   console.error("GEMINI_API_KEY is not set in environment variables.");
 }
 
-const ai = new GoogleGenAI({ apiKey: apiKey || "MISSING_KEY" });
+const ai = new GoogleGenAI({ apiKey: apiKey || "" });
 
 export const DEFAULT_CATEGORIES = [
   'Gıda ve Market',
