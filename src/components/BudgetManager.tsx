@@ -9,9 +9,12 @@ import {
   BarChart,
   Repeat,
   Settings,
-  X
+  X,
+  FileDown
 } from 'lucide-react';
 import { getCategoryColor } from './ReceiptTable.tsx';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface Props {
   receipts: ReceiptData[];
@@ -165,8 +168,23 @@ export const BudgetManager: React.FC<Props> = ({
     setManualForm({ ...manualForm, konu: '', market: '', ucret: '' });
   };
 
+  const exportToPDF = async () => {
+    const input = document.getElementById('budget-content');
+    if (!input) return;
+    
+    const canvas = await html2canvas(input, { scale: 2, backgroundColor: '#ffffff' });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('butce_raporu.pdf');
+  };
+
   return (
-    <div className="space-y-4 pb-10">
+    <div className="space-y-4 pb-10" id="budget-content">
       <div className="no-print flex items-center justify-between gap-1">
         <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 shadow-sm">
           <Calendar size={12} className="text-slate-400" />
@@ -180,6 +198,7 @@ export const BudgetManager: React.FC<Props> = ({
           </select>
         </div>
         <div className="flex gap-1">
+          <button onClick={exportToPDF} className="p-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 rounded-lg border border-emerald-100 dark:border-emerald-900/30"><FileDown size={14} /></button>
           <button onClick={() => setShowTransfer(true)} className="p-1.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-lg border border-indigo-100 dark:border-indigo-900/30"><Repeat size={14} /></button>
           <button onClick={() => setShowManageCategories(true)} className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded-lg border border-slate-200 dark:border-slate-700"><Settings size={14} /></button>
         </div>

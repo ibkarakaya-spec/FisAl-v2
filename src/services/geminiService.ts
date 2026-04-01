@@ -63,36 +63,25 @@ export async function extractReceiptData(base64Image: string, categories: string
             }
           ]
         }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            vendor: { type: Type.STRING },
-            date: { type: Type.STRING },
-            total: { type: Type.NUMBER },
-            category: { type: Type.STRING },
-            items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  price: { type: Type.NUMBER },
-                  quantity: { type: Type.NUMBER }
-                },
-                required: ["name", "price"]
-              }
-            }
-          }
-        }
-      }
+      ]
     }));
-    const text = response.text || "{}";
+    
+    console.log("Gemini API raw response:", response);
+    
+    if (!response) {
+      throw new Error("Gemini API returned no response");
+    }
+
+    const text = response.text;
+    console.log("Gemini API text:", text);
+    
+    if (!text) {
+      throw new Error("Gemini API returned no text content");
+    }
+
     return JSON.parse(text);
   } catch (e) {
-    console.error("Gemini API error", e);
+    console.error("Gemini API error details:", e);
     return {};
   }
 }
