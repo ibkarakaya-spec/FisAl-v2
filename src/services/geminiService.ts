@@ -23,8 +23,10 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 20
   try {
     return await fn();
   } catch (e: any) {
-    if (retries > 0 && (e.message?.includes('429') || e.status === 429)) {
-      console.warn(`Rate limit hit, retrying in ${delay}ms...`);
+    const isRetryable = e.message?.includes('429') || e.status === 429 || 
+                        e.message?.includes('503') || e.status === 503;
+    if (retries > 0 && isRetryable) {
+      console.warn(`Transient error hit (${e.status || 'unknown'}), retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return retryWithBackoff(fn, retries - 1, delay * 2);
     }
