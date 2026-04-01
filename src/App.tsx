@@ -1,10 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, LogIn, LogOut
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon
 } from 'lucide-react';
-import { isFirebaseConfigured, auth, db } from './firebase.ts';
-import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
 import { ReceiptTable } from './components/ReceiptTable.tsx';
@@ -15,9 +12,7 @@ import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [initError, setInitError] = useState<boolean>(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'prices' | 'budget'>('dashboard');
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [statusText, setStatusText] = useState<string>('');
@@ -93,32 +88,8 @@ const App: React.FC = () => {
   }, [receipts, categories]);
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      setIsInitializing(false);
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsInitializing(false);
-    });
-    return () => unsubscribe();
+    setIsInitializing(false);
   }, []);
-
-  useEffect(() => {
-    if (!user || !isFirebaseConfigured) {
-      setReceipts([]);
-      return;
-    }
-    const q = query(collection(db, 'receipts'), where('userId', '==', user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newReceipts: ReceiptData[] = [];
-      snapshot.forEach((doc) => {
-        newReceipts.push({ ...doc.data() as ReceiptData, id: doc.id });
-      });
-      setReceipts(newReceipts);
-    });
-    return () => unsubscribe();
-  }, [user]);
 
   useEffect(() => {
     localStorage.setItem('app_categories', JSON.stringify(categories));
@@ -185,6 +156,7 @@ const App: React.FC = () => {
       
       setStatusText('Analiz Ediliyor...');
       const data = await extractReceiptData(optimizedImg, categories);
+      console.log("Gemini API Response Data:", data);
       
       const newReceipt: ReceiptData = {
         id: Math.random().toString(36).substr(2, 9),
@@ -200,11 +172,7 @@ const App: React.FC = () => {
         imageUrl: optimizedImg,
       };
       
-      if (user) {
-        await addDoc(collection(db, 'receipts'), { ...newReceipt, userId: user.uid });
-      } else {
-        setReceipts(prev => [newReceipt, ...prev]);
-      }
+      setReceipts(prev => [newReceipt, ...prev]);
     } catch (err) {
       alert(`Okuma Hatası: Lütfen fişi tekrar çekin.`);
     }
@@ -239,14 +207,6 @@ const App: React.FC = () => {
           </header>
 
           <main className="max-w-xl mx-auto px-3 pt-3 space-y-3">
-            {!isFirebaseConfigured && (
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-4">
-                <h2 className="text-amber-800 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest mb-1">Firebase Bağlantısı Eksik</h2>
-                <p className="text-amber-700 dark:text-amber-500 text-[11px] leading-relaxed">
-                  Uygulamanın çalışması için Firebase API anahtarları eksik. Lütfen ortam değişkenlerini (Environment Variables) yapılandırın.
-                </p>
-              </div>
-            )}
             {status === AppStatus.PROCESSING && (
               <div className="bg-indigo-600 rounded-xl p-3 text-white flex items-center justify-center gap-2 shadow-lg animate-pulse">
                  <Loader2 size={14} className="animate-spin" />
@@ -310,18 +270,10 @@ const App: React.FC = () => {
                 setCategories={setCategories}
                 availableMonths={availableMonths} 
                 onAddReceipt={async (r) => {
-                  if (user) {
-                    await addDoc(collection(db, 'receipts'), { ...r, userId: user.uid });
-                  } else {
-                    setReceipts(x => [r, ...x]);
-                  }
+                  setReceipts(x => [r, ...x]);
                 }}
                 onDeleteReceipt={async (id) => {
-                  if (user) {
-                    await deleteDoc(doc(db, 'receipts', id));
-                  } else {
-                    setReceipts(p => p.filter(r => r.id !== id));
-                  }
+                  setReceipts(p => p.filter(r => r.id !== id));
                 }}
                 onViewReceipt={setSelectedReceipt} 
                 selectedMonth={dashboardMonth}
@@ -338,17 +290,6 @@ const App: React.FC = () => {
                   <button onClick={() => setShowSettings(false)} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full"><X size={20} /></button>
                 </div>
                 <div className="space-y-4">
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                    {user ? (
-                      <button onClick={() => signOut(auth)} className="w-full py-4 text-red-500 bg-red-50 dark:bg-red-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                        <LogOut size={14} /> Çıkış Yap ({user.email})
-                      </button>
-                    ) : (
-                      <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="w-full py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                        <LogIn size={14} /> Google ile Giriş Yap
-                      </button>
-                    )}
-                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <button onClick={() => importInputRef.current?.click()} className="py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">İçe Aktar</button>
                     <button onClick={handleExportData} className="py-4 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Dışa Aktar</button>
