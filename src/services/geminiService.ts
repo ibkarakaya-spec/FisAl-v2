@@ -19,7 +19,13 @@ export async function extractReceiptData(base64Image: string, categories: string
   const prompt = `Bu fiş görselindeki verileri ayıkla. 
   Kategoriyi şu listeden seç: ${categories.join(', ')}.
   Tarih formatı GG.AA.YYYY olmalı.
-  Tüm ürün isimlerini büyük harf yap.`;
+  Tüm ürün isimlerini büyük harf yap.
+  
+  Önemli:
+  - Fişin toplam tutarını (genellikle en altta yazar) 'total' alanına yaz.
+  - Ürün listesini 'items' dizisine ekle.
+  - Eğer ürünün miktarı belirtilmemişse 1 olarak varsay.
+  - Fişteki tüm kalemleri (ürünler, poşet, vergiler vb.) ürün listesine ekle.`;
 
   try {
     const response = await ai.models.generateContent({
