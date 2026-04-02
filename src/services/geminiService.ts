@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
@@ -19,7 +19,7 @@ export const DEFAULT_CATEGORIES = [
   'Mobilya'
 ];
 
-async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
+async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 1500): Promise<T> {
   try {
     return await fn();
   } catch (e: any) {
@@ -28,7 +28,7 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 20
     if (retries > 0 && isRetryable) {
       console.warn(`Transient error hit (${e.status || 'unknown'}), retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return retryWithBackoff(fn, retries - 1, delay * 2);
+      return retryWithBackoff(fn, retries - 1, delay * 1.5);
     }
     throw e;
   }
@@ -37,16 +37,11 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 20
 export async function extractReceiptData(base64Image: string, categories: string[]) {
   const model = "gemini-3-flash-preview";
   
-  const prompt = `Bu fiş görselindeki verileri ayıkla. 
-  Kategoriyi şu listeden seç: ${categories.join(', ')}.
-  Tarih formatı GG.AA.YYYY olmalı.
-  Tüm ürün isimlerini büyük harf yap.
-  
-  Önemli:
-  - Fişin toplam tutarını (genellikle en altta yazar) 'total' alanına yaz.
-  - Ürün listesini 'items' dizisine ekle.
-  - Eğer ürünün miktarı belirtilmemişse 1 olarak varsay.
-  - Fişteki tüm kalemleri (ürünler, poşet, vergiler vb.) ürün listesine ekle.`;
+  const prompt = `Extract receipt data. 
+  Category from: ${categories.join(', ')}.
+  Date: DD.MM.YYYY.
+  Items: UPPERCASE names.
+  Include all items, bags, taxes. Default qty 1.`;
 
   try {
     const response = await retryWithBackoff(() => ai.models.generateContent({
@@ -65,6 +60,7 @@ export async function extractReceiptData(base64Image: string, categories: string
         }
       ],
       config: {
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,

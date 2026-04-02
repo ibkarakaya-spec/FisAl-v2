@@ -168,8 +168,134 @@ export const BudgetManager: React.FC<Props> = ({
     setManualForm({ ...manualForm, konu: '', market: '', ucret: '' });
   };
 
-  const exportToPDF = () => {
-    window.print();
+  const exportToPDF = async () => {
+    const input = document.getElementById('budget-content');
+    if (!input) return;
+    
+    // Create a temporary container for a professional PDF layout
+    const printContainer = document.createElement('div');
+    printContainer.style.position = 'fixed';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '0';
+    printContainer.style.width = '800px';
+    printContainer.style.padding = '40px';
+    printContainer.style.background = '#ffffff';
+    printContainer.style.color = '#000000';
+    printContainer.style.fontFamily = 'Inter, sans-serif';
+    
+    const dateStr = new Date().toLocaleDateString('tr-TR');
+    const monthName = selectedMonth === "Hepsi" ? "Tüm Zamanlar" : activeMonthKey;
+
+    printContainer.innerHTML = `
+      <div style="border-bottom: 4px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <h1 style="font-size: 32px; font-weight: 900; color: #1e1b4b; margin: 0; letter-spacing: -1px;">BÜTÇE RAPORU</h1>
+          <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${monthName}</p>
+        </div>
+        <div style="text-align: right;">
+          <p style="font-size: 10px; color: #94a3b8; margin: 0; font-weight: bold;">OLUŞTURULMA TARİHİ</p>
+          <p style="font-size: 14px; color: #1e1b4b; margin: 0; font-weight: 800;">${dateStr}</p>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px;">
+        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0;">
+          <p style="font-size: 10px; color: #64748b; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">TOPLAM HARCAMA</p>
+          <p style="font-size: 24px; font-weight: 900; color: #4f46e5; margin: 0;">${categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</p>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0;">
+          <p style="font-size: 10px; color: #64748b; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">KATEGORİ</p>
+          <p style="font-size: 24px; font-weight: 900; color: #1e1b4b; margin: 0;">${selectedCategory}</p>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0;">
+          <p style="font-size: 10px; color: #64748b; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">FİŞ SAYISI</p>
+          <p style="font-size: 24px; font-weight: 900; color: #1e1b4b; margin: 0;">${filteredReceipts.length}</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 40px;">
+        <h2 style="font-size: 14px; font-weight: 800; color: #1e1b4b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;">
+          <span style="width: 4px; height: 16px; background: #4f46e5; border-radius: 2px;"></span>
+          BÜTÇE DURUMU
+        </h2>
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
+          <thead>
+            <tr style="text-align: left;">
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">KATEGORİ</th>
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">LİMİT</th>
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">HARCANAN</th>
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">KALAN</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${currentLimits.map(l => {
+              const spent = spentPerCategory[l.category] || 0;
+              const remaining = l.limit - spent;
+              return `
+                <tr style="background: #ffffff; border: 1px solid #e2e8f0;">
+                  <td style="padding: 12px; font-size: 12px; font-weight: 700; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0; border-top-left-radius: 8px; border-bottom-left-radius: 8px;">${l.category.toUpperCase()}</td>
+                  <td style="padding: 12px; font-size: 12px; font-weight: 600; text-align: right; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">${l.limit.toLocaleString('tr-TR')}₺</td>
+                  <td style="padding: 12px; font-size: 12px; font-weight: 600; text-align: right; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">${spent.toLocaleString('tr-TR')}₺</td>
+                  <td style="padding: 12px; font-size: 12px; font-weight: 800; text-align: right; color: ${remaining < 0 ? '#ef4444' : '#10b981'}; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-top-right-radius: 8px; border-bottom-right-radius: 8px;">${remaining.toLocaleString('tr-TR')}₺</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <h2 style="font-size: 14px; font-weight: 800; color: #1e1b4b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;">
+          <span style="width: 4px; height: 16px; background: #4f46e5; border-radius: 2px;"></span>
+          HARCAMA DETAYLARI
+        </h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="text-align: left; border-bottom: 2px solid #e2e8f0;">
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">TARİH</th>
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">MAĞAZA</th>
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">KATEGORİ</th>
+              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">TUTAR</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredReceipts.map(r => `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 12px; font-size: 11px; color: #64748b;">${r.date}</td>
+                <td style="padding: 12px; font-size: 11px; font-weight: 700; color: #1e1b4b;">${r.vendor.toUpperCase()}</td>
+                <td style="padding: 12px; font-size: 10px;"><span style="background: #f1f5f9; padding: 2px 8px; border-radius: 10px; font-weight: 700; color: #475569;">${r.category.toUpperCase()}</span></td>
+                <td style="padding: 12px; font-size: 12px; font-weight: 800; text-align: right; color: #1e1b4b;">${r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 50px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+        <p style="font-size: 10px; color: #94a3b8; font-weight: 600;">BU RAPOR OTOMATİK OLARAK OLUŞTURULMUŞTUR. © ${new Date().getFullYear()} AKILLI FİŞ YÖNETİMİ</p>
+      </div>
+    `;
+
+    document.body.appendChild(printContainer);
+    
+    try {
+      const canvas = await html2canvas(printContainer, { 
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Butce_Raporu_${monthName.replace(' ', '_')}.pdf`);
+    } finally {
+      document.body.removeChild(printContainer);
+    }
   };
 
   return (
