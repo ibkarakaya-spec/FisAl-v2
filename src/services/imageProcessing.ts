@@ -70,18 +70,23 @@ export async function processImage(imageUrl: string, options: ProcessOptions): P
 }
 
 export async function autoEnhance(file: File): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const url = e.target?.result as string;
-      const enhanced = await processImage(url, {
-        contrast: 1.4,
-        brightness: 1.05,
-        grayscale: false,
-        maxWidth: 1600
-      });
-      resolve(enhanced);
+      try {
+        const url = e.target?.result as string;
+        const enhanced = await processImage(url, {
+          contrast: 1.4,
+          brightness: 1.05,
+          grayscale: false,
+          maxWidth: 1600
+        });
+        resolve(enhanced);
+      } catch (err) {
+        reject(err);
+      }
     };
+    reader.onerror = () => reject(new Error("Dosya okuma hatası"));
     reader.readAsDataURL(file);
   });
 }

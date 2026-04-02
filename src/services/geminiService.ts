@@ -1,13 +1,5 @@
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 
-const apiKey = process.env.GEMINI_API_KEY;
-
-if (!apiKey) {
-  console.error("GEMINI_API_KEY is not set in environment variables.");
-}
-
-const ai = new GoogleGenAI({ apiKey: apiKey || "" });
-
 export const DEFAULT_CATEGORIES = [
   'Gıda ve Market',
   'Araç ve Ulaşım',
@@ -35,6 +27,11 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 15
 }
 
 export async function extractReceiptData(base64Image: string, categories: string[]) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not set in environment variables.");
+  }
+  const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
   
   const prompt = `Aşağıdaki fiş görselini en yüksek doğrulukla analiz et ve verileri JSON formatında çıkar.
@@ -100,22 +97,23 @@ export async function extractReceiptData(base64Image: string, categories: string
       }
     }));
     
-    console.log("Gemini API raw response:", response);
-    
     if (!response) {
       throw new Error("Gemini API returned no response");
     }
 
     const text = response.text;
-    console.log("Gemini API text:", text);
-    
     if (!text) {
       throw new Error("Gemini API returned no text content");
     }
 
-    return JSON.parse(text);
-  } catch (e) {
+    try {
+      return JSON.parse(text);
+    } catch (parseError) {
+      console.error("JSON Parse Error on text:", text);
+      throw new Error("Failed to parse Gemini response as JSON");
+    }
+  } catch (e: any) {
     console.error("Gemini API error details:", e);
-    return {};
+    throw e;
   }
 }
