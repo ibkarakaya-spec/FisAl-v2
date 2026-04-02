@@ -157,15 +157,21 @@ const App: React.FC = () => {
       
       setStatusText(`${prefix}Analiz Ediliyor...`);
       const data = await extractReceiptData(optimizedImg, categories);
-      console.log("Gemini API Response Data:", data);
       
+      const finalCategory = (data.category || categories[0] || 'Gıda ve Market').trim();
+      
+      // Kategori listede yoksa ekle (filtreye takılmaması için)
+      if (!categories.includes(finalCategory)) {
+        setCategories(prev => [...prev, finalCategory]);
+      }
+
       const newReceipt: ReceiptData = {
         id: Math.random().toString(36).substr(2, 9),
         vendor: (data.vendor || 'BİLİNMEYEN MAĞAZA').toUpperCase(),
         date: data.date || new Date().toLocaleDateString('tr-TR'),
         total: Number(data.total) || 0,
         currency: '₺',
-        category: data.category || (categories[0] || 'Gıda ve Market'),
+        category: finalCategory,
         tax: 0,
         items: data.items || [],
         confidence: 1,
@@ -174,9 +180,10 @@ const App: React.FC = () => {
       };
       
       setReceipts(prev => [newReceipt, ...prev]);
-    } catch (err) {
+      setDashboardMonth("Hepsi"); // Yeni fişi hemen görebilmesi için filtreyi sıfırla
+    } catch (err: any) {
       console.error("Process Error", err);
-      // Don't alert here to not break the loop for multiple files
+      alert(`Hata: ${err.message || 'Fiş işlenirken bir sorun oluştu.'}`);
     }
   };
 
