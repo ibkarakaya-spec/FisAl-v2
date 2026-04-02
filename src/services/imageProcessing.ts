@@ -75,7 +75,7 @@ export async function autoEnhance(file: File): Promise<string> {
     reader.onload = async (e) => {
       const url = e.target?.result as string;
       const enhanced = await processImage(url, {
-        contrast: 1.2,
+        contrast: 1.4,
         brightness: 1.05,
         grayscale: false,
         maxWidth: 1600

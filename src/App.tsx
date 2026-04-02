@@ -161,9 +161,9 @@ const App: React.FC = () => {
       
       const newReceipt: ReceiptData = {
         id: Math.random().toString(36).substr(2, 9),
-        vendor: (data.vendor || 'BİLİNMEYEN').toUpperCase(),
+        vendor: (data.vendor || 'BİLİNMEYEN MAĞAZA').toUpperCase(),
         date: data.date || new Date().toLocaleDateString('tr-TR'),
-        total: data.total || 0,
+        total: Number(data.total) || 0,
         currency: '₺',
         category: data.category || (categories[0] || 'Gıda ve Market'),
         tax: 0,

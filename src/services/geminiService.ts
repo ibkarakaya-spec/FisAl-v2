@@ -37,18 +37,25 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 15
 export async function extractReceiptData(base64Image: string, categories: string[]) {
   const model = "gemini-3-flash-preview";
   
-  const prompt = `Aşağıdaki fiş görselini analiz et ve verileri JSON formatında çıkar.
+  const prompt = `Aşağıdaki fiş görselini en yüksek doğrulukla analiz et ve verileri JSON formatında çıkar.
   
-  Kurallar:
-  1. Kategori seçimini şu listeden yap: ${categories.join(', ')}.
-  2. Tarih formatı GG.AA.YYYY (Örn: 02.04.2026) olmalı.
-  3. Ürün isimlerini (items) tamamen BÜYÜK HARF yap.
-  4. Fişteki tüm kalemleri (ürünler, poşet, KDV vb.) 'items' listesine ekle.
-  5. Eğer miktar (quantity) belirtilmemişse 1 varsay.
-  6. Fişin en altındaki genel toplam tutarı 'total' alanına sayı olarak yaz.
-  7. Mağaza adını (vendor) fişin en üstünden veya logodan bulup 'vendor' alanına yaz.
+  KRİTİK TALİMATLAR:
+  1. MAĞAZA ADI (vendor): Fişin en üstündeki en büyük yazıyı veya logodaki ismi bul. (Örn: MİGROS, BİM, A101, SHELL vb.)
+  2. TARİH (date): Fiş üzerindeki tarihi bul. Format GG.AA.YYYY olmalı. Eğer tarih bulunamazsa bugünün tarihini (${new Date().toLocaleDateString('tr-TR')}) kullan.
+  3. TOPLAM TUTAR (total): Fişin en altında yazan "TOPLAM", "GENEL TOPLAM" veya "ÖDENECEK" tutarını sayı olarak yaz. Kuruş ayracı olarak nokta kullan.
+  4. ÜRÜNLER (items): 
+     - Fişteki her bir kalemi tek tek oku.
+     - Ürün isimlerini tamamen BÜYÜK HARF yap.
+     - Fiyatları sayı olarak yaz.
+     - Miktar belirtilmemişse 1 yaz.
+     - Poşet, KDV, indirim gibi kalemleri de listeye ekle.
+  5. KATEGORİ (category): Fişin içeriğine göre şu listeden en uygun olanı seç: ${categories.join(', ')}.
   
-  Önemli: Fişteki rakamlar bazen silik olabilir, lütfen en mantıklı okumayı yap. Toplam tutar (total) ile kalemlerin (items) toplamının tutarlı olduğundan emin ol.`;
+  HATA ÖNLEME:
+  - Rakamları okurken çok dikkatli ol (Örn: 8 ile B, 0 ile O karışmamalı).
+  - Virgül ile ayrılmış tutarları noktaya çevir (Örn: 12,50 -> 12.50).
+  - Ürünlerin toplamı ile 'total' alanındaki tutarın tutarlı olduğundan emin ol.
+  - Sadece JSON döndür, başka açıklama yazma.`;
 
   try {
     const response = await retryWithBackoff(() => ai.models.generateContent({
@@ -67,7 +74,7 @@ export async function extractReceiptData(base64Image: string, categories: string
         }
       ],
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
