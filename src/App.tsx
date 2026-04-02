@@ -84,8 +84,10 @@ const App: React.FC = () => {
   };
 
   const activeReceipts = useMemo(() => {
-    return receipts.filter(r => categories.includes(r.category));
-  }, [receipts, categories]);
+    // Artık kategorilere göre filtrelemiyoruz, tüm fişleri gösteriyoruz.
+    // Kategoriler sadece bütçe ve öneri amaçlı kullanılıyor.
+    return receipts;
+  }, [receipts]);
 
   useEffect(() => {
     setIsInitializing(false);
@@ -156,14 +158,20 @@ const App: React.FC = () => {
       const optimizedImg = await autoEnhance(file);
       
       setStatusText(`${prefix}Analiz Ediliyor...`);
+      // Mevcut kategorileri Gemini'ye gönderiyoruz
       const data = await extractReceiptData(optimizedImg, categories);
       
-      const finalCategory = (data.category || categories[0] || 'Gıda ve Market').trim();
+      const rawCategory = data.category || categories[0] || 'Gıda ve Market';
+      const finalCategory = rawCategory.trim();
       
-      // Kategori listede yoksa ekle (filtreye takılmaması için)
-      if (!categories.includes(finalCategory)) {
-        setCategories(prev => [...prev, finalCategory]);
-      }
+      // Kategori listede yoksa ekle (case-insensitive kontrol)
+      setCategories(prev => {
+        const normalizedCats = prev.map(c => c.trim().toUpperCase());
+        if (!normalizedCats.includes(finalCategory.toUpperCase())) {
+          return [...prev, finalCategory];
+        }
+        return prev;
+      });
 
       const newReceipt: ReceiptData = {
         id: Math.random().toString(36).substr(2, 9),
@@ -179,11 +187,14 @@ const App: React.FC = () => {
         imageUrl: optimizedImg,
       };
       
+      console.log("Yeni fiş ekleniyor:", newReceipt);
       setReceipts(prev => [newReceipt, ...prev]);
-      setDashboardMonth("Hepsi"); // Yeni fişi hemen görebilmesi için filtreyi sıfırla
+      setDashboardMonth("Hepsi"); 
+      setActiveTab('dashboard');
     } catch (err: any) {
-      console.error("Process Error", err);
+      console.error("İşlem Hatası:", err);
       alert(`Hata: ${err.message || 'Fiş işlenirken bir sorun oluştu.'}`);
+      throw err; // handleCapture'daki catch'e fırlat
     }
   };
 
@@ -192,12 +203,16 @@ const App: React.FC = () => {
     const files = Array.from(e.target.files) as File[];
     setStatus(AppStatus.PROCESSING);
     
-    for (let i = 0; i < files.length; i++) {
-      await processFile(files[i], i, files.length);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        await processFile(files[i], i, files.length);
+      }
+    } catch (err) {
+      console.error("Yükleme Hatası:", err);
+    } finally {
+      setStatus(AppStatus.IDLE);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-    
-    setStatus(AppStatus.IDLE);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
