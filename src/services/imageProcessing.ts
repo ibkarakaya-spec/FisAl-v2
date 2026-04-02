@@ -78,7 +78,7 @@ export async function autoEnhance(file: File): Promise<string> {
         contrast: 1.2,
         brightness: 1.05,
         grayscale: false,
-        maxWidth: 1024
+        maxWidth: 800
       });
       resolve(enhanced);
     };
