@@ -11,11 +11,11 @@ export const DEFAULT_CATEGORIES = [
   'Mobilya'
 ];
 
-// Model rotasyonu için kullanılacak modeller
+// Model rotasyonu için kullanılacak modeller (Sadece izin verilen ve güncel modeller)
 const MODELS = [
   "gemini-3-flash-preview",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-flash-8b"
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3.1-pro-preview"
 ];
 
 export async function extractReceiptData(
@@ -25,13 +25,12 @@ export async function extractReceiptData(
 ) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not set in environment variables.");
+    throw new Error("GEMINI_API_KEY bulunamadı. Lütfen ayarları kontrol edin.");
   }
   const ai = new GoogleGenAI({ apiKey });
   
   let lastError: any = null;
 
-  // Modelleri sırayla dene (Bekleme yapmadan)
   for (let i = 0; i < MODELS.length; i++) {
     const modelName = MODELS[i];
     try {
@@ -42,7 +41,7 @@ export async function extractReceiptData(
         contents: [
           {
             parts: [
-              { text: `Aşağıdaki fiş görselini analiz et ve JSON olarak döndür. Kategoriler: ${categories.join(', ')}` },
+              { text: `Aşağıdaki fiş görselini analiz et ve verileri JSON formatında döndür. Kategoriler: ${categories.join(', ')}` },
               {
                 inlineData: {
                   mimeType: "image/jpeg",
@@ -53,8 +52,7 @@ export async function extractReceiptData(
           }
         ],
         config: {
-          // Flash modellerinde thinkingLevel'ı düşürerek hızı artırıyoruz
-          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          // thinkingConfig'i kaldırıyoruz çünkü her modelle uyumlu olmayabilir
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -80,9 +78,11 @@ export async function extractReceiptData(
         }
       });
 
-      if (response && response.text) {
-        return JSON.parse(response.text);
+      const text = response.text?.trim();
+      if (text) {
+        return JSON.parse(text);
       }
+      throw new Error("Model boş yanıt döndürdü.");
     } catch (e: any) {
       lastError = e;
       const errorMsg = e.message || "";
@@ -91,11 +91,10 @@ export async function extractReceiptData(
         console.warn(`${modelName} limiti doldu, sıradaki modele geçiliyor...`);
         continue;
       }
-      // Diğer hatalarda (örn: geçersiz görsel) direkt fırlat
+      // Diğer kritik hatalarda (örn: geçersiz görsel) direkt fırlat
       throw e;
     }
   }
 
-  // Tüm modeller denendiyse ve hata alındıysa
   throw lastError;
 }

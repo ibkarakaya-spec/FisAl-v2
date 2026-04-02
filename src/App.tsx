@@ -196,6 +196,7 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error("İşlem Hatası:", err);
       let userMessage = 'Fiş işlenirken bir sorun oluştu.';
+      let details = '';
       
       let errorMsg = err.message || "";
       
@@ -205,19 +206,20 @@ const App: React.FC = () => {
           const parsed = JSON.parse(errorMsg);
           if (parsed.error?.message) errorMsg = parsed.error.message;
         }
-      } catch (e) {
-        // Parse hatası olursa orijinal mesajla devam et
-      }
+      } catch (e) {}
       
       if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
-        userMessage = 'Tüm modellerin ücretsiz kullanım limitine ulaşıldı. Lütfen birkaç dakika bekleyin veya fişi manuel ekleyin.';
+        userMessage = 'Tüm modellerin ücretsiz kullanım limitine ulaşıldı. Lütfen birkaç dakika bekleyin.';
       } else if (errorMsg.includes('503')) {
         userMessage = 'Servis şu an yoğun, lütfen tekrar deneyin.';
       } else if (errorMsg.includes('API key not valid')) {
         userMessage = 'API anahtarı geçersiz. Lütfen ayarları kontrol edin.';
+      } else {
+        // Bilinmeyen hatalar için teknik detayı ekle
+        details = `\n\nDetay: ${errorMsg.substring(0, 150)}`;
       }
       
-      alert(`Hata: ${userMessage}`);
+      alert(`Hata: ${userMessage}${details}`);
       throw err;
     }
   };
