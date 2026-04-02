@@ -149,12 +149,13 @@ const App: React.FC = () => {
     window.location.reload();
   };
 
-  const processFile = async (file: File) => {
+  const processFile = async (file: File, index?: number, total?: number) => {
+    const prefix = total && total > 1 ? `[${(index || 0) + 1}/${total}] ` : '';
     try {
-      setStatusText('İyileştiriliyor...');
+      setStatusText(`${prefix}Görsel İyileştiriliyor...`);
       const optimizedImg = await autoEnhance(file);
       
-      setStatusText('Analiz Ediliyor...');
+      setStatusText(`${prefix}Analiz Ediliyor...`);
       const data = await extractReceiptData(optimizedImg, categories);
       console.log("Gemini API Response Data:", data);
       
@@ -174,7 +175,8 @@ const App: React.FC = () => {
       
       setReceipts(prev => [newReceipt, ...prev]);
     } catch (err) {
-      alert(`Okuma Hatası: Lütfen fişi tekrar çekin.`);
+      console.error("Process Error", err);
+      // Don't alert here to not break the loop for multiple files
     }
   };
 
@@ -182,7 +184,11 @@ const App: React.FC = () => {
     if (!e.target.files?.length) return;
     const files = Array.from(e.target.files) as File[];
     setStatus(AppStatus.PROCESSING);
-    await Promise.all(files.map(processFile));
+    
+    for (let i = 0; i < files.length; i++) {
+      await processFile(files[i], i, files.length);
+    }
+    
     setStatus(AppStatus.IDLE);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };

@@ -37,11 +37,18 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 15
 export async function extractReceiptData(base64Image: string, categories: string[]) {
   const model = "gemini-3-flash-preview";
   
-  const prompt = `Extract receipt data. 
-  Category from: ${categories.join(', ')}.
-  Date: DD.MM.YYYY.
-  Items: UPPERCASE names.
-  Include all items, bags, taxes. Default qty 1.`;
+  const prompt = `Aşağıdaki fiş görselini analiz et ve verileri JSON formatında çıkar.
+  
+  Kurallar:
+  1. Kategori seçimini şu listeden yap: ${categories.join(', ')}.
+  2. Tarih formatı GG.AA.YYYY (Örn: 02.04.2026) olmalı.
+  3. Ürün isimlerini (items) tamamen BÜYÜK HARF yap.
+  4. Fişteki tüm kalemleri (ürünler, poşet, KDV vb.) 'items' listesine ekle.
+  5. Eğer miktar (quantity) belirtilmemişse 1 varsay.
+  6. Fişin en altındaki genel toplam tutarı 'total' alanına sayı olarak yaz.
+  7. Mağaza adını (vendor) fişin en üstünden veya logodan bulup 'vendor' alanına yaz.
+  
+  Önemli: Fişteki rakamlar bazen silik olabilir, lütfen en mantıklı okumayı yap. Toplam tutar (total) ile kalemlerin (items) toplamının tutarlı olduğundan emin ol.`;
 
   try {
     const response = await retryWithBackoff(() => ai.models.generateContent({
@@ -60,7 +67,7 @@ export async function extractReceiptData(base64Image: string, categories: string
         }
       ],
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
