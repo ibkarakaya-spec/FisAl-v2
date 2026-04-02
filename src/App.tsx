@@ -159,7 +159,9 @@ const App: React.FC = () => {
       
       setStatusText(`${prefix}Analiz Ediliyor...`);
       // Mevcut kategorileri Gemini'ye gönderiyoruz
-      const data = await extractReceiptData(optimizedImg, categories);
+      const data = await extractReceiptData(optimizedImg, categories, (msg) => {
+        setStatusText(`${prefix}${msg}`);
+      });
       
       const rawCategory = data.category || categories[0] || 'Gıda ve Market';
       const finalCategory = rawCategory.trim();
@@ -193,7 +195,29 @@ const App: React.FC = () => {
       setActiveTab('dashboard');
     } catch (err: any) {
       console.error("İşlem Hatası:", err);
-      alert(`Hata: ${err.message || 'Fiş işlenirken bir sorun oluştu.'}`);
+      let userMessage = 'Fiş işlenirken bir sorun oluştu.';
+      
+      let errorMsg = err.message || "";
+      
+      // Eğer hata mesajı JSON ise içindeki mesajı ayıklamaya çalış
+      try {
+        if (errorMsg.startsWith('{')) {
+          const parsed = JSON.parse(errorMsg);
+          if (parsed.error?.message) errorMsg = parsed.error.message;
+        }
+      } catch (e) {
+        // Parse hatası olursa orijinal mesajla devam et
+      }
+      
+      if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
+        userMessage = 'Günlük ücretsiz kullanım limitine ulaşıldı veya çok hızlı işlem yapılıyor. Lütfen birkaç dakika bekleyip tekrar deneyin.';
+      } else if (errorMsg.includes('503')) {
+        userMessage = 'Servis şu an yoğun, lütfen tekrar deneyin.';
+      } else if (errorMsg.includes('API key not valid')) {
+        userMessage = 'API anahtarı geçersiz. Lütfen ayarları kontrol edin.';
+      }
+      
+      alert(`Hata: ${userMessage}`);
       throw err; // handleCapture'daki catch'e fırlat
     }
   };

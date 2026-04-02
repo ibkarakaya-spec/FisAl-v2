@@ -11,22 +11,43 @@ export const DEFAULT_CATEGORIES = [
   'Mobilya'
 ];
 
-async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 5, delay = 1500): Promise<T> {
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>, 
+  retries = 5, 
+  delay = 2000, 
+  onRetry?: (msg: string) => void
+): Promise<T> {
   try {
     return await fn();
   } catch (e: any) {
-    const isRetryable = e.message?.includes('429') || e.status === 429 || 
-                        e.message?.includes('503') || e.status === 503;
+    const errorMsg = e.message || "";
+    const isRetryable = errorMsg.includes('429') || e.status === 429 || 
+                        errorMsg.includes('503') || e.status === 503 ||
+                        errorMsg.includes('RESOURCE_EXHAUSTED');
+    
     if (retries > 0 && isRetryable) {
-      console.warn(`Transient error hit (${e.status || 'unknown'}), retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return retryWithBackoff(fn, retries - 1, delay * 1.5);
+      let waitTime = delay;
+      const match = errorMsg.match(/retry in ([\d.]+)/);
+      if (match && match[1]) {
+        waitTime = (parseFloat(match[1]) * 1000) + 500;
+      }
+      
+      const waitSec = (waitTime / 1000).toFixed(1);
+      if (onRetry) onRetry(`Limit aşıldı, ${waitSec}sn bekleniyor...`);
+      
+      console.warn(`Gemini API limit hit, retrying in ${waitTime}ms... (${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      return retryWithBackoff(fn, retries - 1, delay * 2, onRetry);
     }
     throw e;
   }
 }
 
-export async function extractReceiptData(base64Image: string, categories: string[]) {
+export async function extractReceiptData(
+  base64Image: string, 
+  categories: string[], 
+  onRetry?: (msg: string) => void
+) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set in environment variables.");
@@ -95,7 +116,7 @@ export async function extractReceiptData(base64Image: string, categories: string
           }
         }
       }
-    }));
+    }), 5, 2000, onRetry);
     
     if (!response) {
       throw new Error("Gemini API returned no response");
