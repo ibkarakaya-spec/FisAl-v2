@@ -210,7 +210,7 @@ const App: React.FC = () => {
       }
       
       if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
-        userMessage = 'Günlük ücretsiz kullanım limitine ulaşıldı veya çok hızlı işlem yapılıyor. Lütfen birkaç dakika bekleyip tekrar deneyin.';
+        userMessage = 'Tüm modellerin ücretsiz kullanım limitine ulaşıldı. Lütfen birkaç dakika bekleyin veya fişi manuel ekleyin.';
       } else if (errorMsg.includes('503')) {
         userMessage = 'Servis şu an yoğun, lütfen tekrar deneyin.';
       } else if (errorMsg.includes('API key not valid')) {
@@ -218,7 +218,7 @@ const App: React.FC = () => {
       }
       
       alert(`Hata: ${userMessage}`);
-      throw err; // handleCapture'daki catch'e fırlat
+      throw err;
     }
   };
 

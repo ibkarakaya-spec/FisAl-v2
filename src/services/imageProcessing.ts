@@ -62,7 +62,7 @@ export async function processImage(imageUrl: string, options: ProcessOptions): P
       }
 
       ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
     };
     img.onerror = reject;
     img.src = imageUrl;
@@ -76,10 +76,10 @@ export async function autoEnhance(file: File): Promise<string> {
       try {
         const url = e.target?.result as string;
         const enhanced = await processImage(url, {
-          contrast: 1.4,
-          brightness: 1.05,
+          contrast: 1.3,
+          brightness: 1.0,
           grayscale: false,
-          maxWidth: 1600
+          maxWidth: 1024
         });
         resolve(enhanced);
       } catch (err) {
