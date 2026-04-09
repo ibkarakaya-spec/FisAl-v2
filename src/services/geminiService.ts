@@ -13,9 +13,10 @@ export const DEFAULT_CATEGORIES = [
 
 // Model rotasyonu için kullanılacak modeller (Sadece izin verilen ve güncel modeller)
 const MODELS = [
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
   "gemini-3-flash-preview",
-  "gemini-3.1-flash-lite-preview",
-  "gemini-3.1-pro-preview"
+  "gemini-3.1-flash-lite-preview"
 ];
 
 export async function extractReceiptData(
@@ -86,9 +87,17 @@ export async function extractReceiptData(
     } catch (e: any) {
       lastError = e;
       const errorMsg = e.message || "";
-      // Eğer hata limit aşımı ise bir sonraki modele geç
-      if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
-        console.warn(`${modelName} limiti doldu, sıradaki modele geçiliyor...`);
+      // Eğer hata limit aşımı veya servis yoğunluğu ise bir sonraki modele geç
+      const isRetryable = 
+        errorMsg.includes('429') || 
+        errorMsg.includes('RESOURCE_EXHAUSTED') || 
+        errorMsg.includes('quota') ||
+        errorMsg.includes('503') ||
+        errorMsg.includes('high demand') ||
+        errorMsg.includes('Service Unavailable');
+
+      if (isRetryable && i < MODELS.length - 1) {
+        console.warn(`${modelName} hatası (${errorMsg}), sıradaki modele geçiliyor...`);
         continue;
       }
       // Diğer kritik hatalarda (örn: geçersiz görsel) direkt fırlat

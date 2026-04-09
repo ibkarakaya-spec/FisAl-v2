@@ -210,8 +210,8 @@ const App: React.FC = () => {
       
       if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
         userMessage = 'Tüm modellerin ücretsiz kullanım limitine ulaşıldı. Lütfen birkaç dakika bekleyin.';
-      } else if (errorMsg.includes('503')) {
-        userMessage = 'Servis şu an yoğun, lütfen tekrar deneyin.';
+      } else if (errorMsg.includes('503') || errorMsg.includes('high demand')) {
+        userMessage = 'Google servisleri şu an çok yoğun. Lütfen biraz bekleyip tekrar deneyin.';
       } else if (errorMsg.includes('API key not valid')) {
         userMessage = 'API anahtarı geçersiz. Lütfen ayarları kontrol edin.';
       } else {
