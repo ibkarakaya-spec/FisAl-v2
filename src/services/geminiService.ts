@@ -13,10 +13,10 @@ export const DEFAULT_CATEGORIES = [
 
 // Model rotasyonu için kullanılacak modeller (Sadece izin verilen ve güncel modeller)
 const MODELS = [
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
   "gemini-3-flash-preview",
-  "gemini-3.1-flash-lite-preview"
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3.1-pro-preview",
+  "gemini-flash-latest"
 ];
 
 export async function extractReceiptData(
