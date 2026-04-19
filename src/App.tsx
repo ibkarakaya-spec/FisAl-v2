@@ -84,9 +84,13 @@ const App: React.FC = () => {
   };
 
   const activeReceipts = useMemo(() => {
-    // Artık kategorilere göre filtrelemiyoruz, tüm fişleri gösteriyoruz.
-    // Kategoriler sadece bütçe ve öneri amaçlı kullanılıyor.
-    return receipts;
+    // Fişleri tarihe göre (en yeni en üstte) otomatik sıralıyoruz
+    return [...receipts].sort((a, b) => {
+      const dateA = a.date.split('.').reverse().join('-');
+      const dateB = b.date.split('.').reverse().join('-');
+      if (dateA !== dateB) return dateB.localeCompare(dateA);
+      return (b.timestamp || 0) - (a.timestamp || 0);
+    });
   }, [receipts]);
 
   useEffect(() => {
@@ -306,7 +310,7 @@ const App: React.FC = () => {
                       if (dashboardMonth === 'Hepsi') return true;
                       const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
                       return rMonth === dashboardMonth;
-                    }).sort((a, b) => b.date.split('.').reverse().join('-').localeCompare(a.date.split('.').reverse().join('-')))} 
+                    })}
                     onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 
                     onView={setSelectedReceipt} 
                     onCopySingle={() => Promise.resolve(true)}
