@@ -83,13 +83,22 @@ export const BudgetManager: React.FC<Props> = ({
   }, [allLimits, activeMonthKey, categories]);
 
   const currentMonthReceipts = useMemo(() => {
+    const parseDateForSort = (dateStr: string) => {
+      if (!dateStr) return '0000-00-00';
+      if (dateStr.includes('.')) {
+        const [d, m, y] = dateStr.split('.');
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+      return dateStr;
+    };
+
     return receipts.filter(r => {
       if (selectedMonth === "Hepsi") return true;
       let rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
       return rMonth === selectedMonth;
     }).sort((a, b) => {
-      const dateA = a.date.split('.').reverse().join('-');
-      const dateB = b.date.split('.').reverse().join('-');
+      const dateA = parseDateForSort(a.date);
+      const dateB = parseDateForSort(b.date);
       if (dateA !== dateB) return dateB.localeCompare(dateA);
       return (b.timestamp || 0) - (a.timestamp || 0);
     });

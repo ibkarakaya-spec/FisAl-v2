@@ -26,6 +26,15 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
       lastPrice: number;
     }> = {};
 
+    const parseDateForSort = (dateStr: string) => {
+      if (!dateStr) return '0000-00-00';
+      if (dateStr.includes('.')) {
+        const [d, m, y] = dateStr.split('.');
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+      return dateStr;
+    };
+
     receipts.forEach(r => {
       r.items.forEach(item => {
         const name = item.name.toLowerCase().trim();
@@ -53,7 +62,7 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
         history[name].minPrice = Math.min(history[name].minPrice, unitPrice);
         history[name].maxPrice = Math.max(history[name].maxPrice, unitPrice);
         
-        const sortedPurchases = [...history[name].purchases].sort((a, b) => b.date.split('.').reverse().join('-').localeCompare(a.date.split('.').reverse().join('-')));
+        const sortedPurchases = [...history[name].purchases].sort((a, b) => parseDateForSort(b.date).localeCompare(parseDateForSort(a.date)));
         history[name].lastPrice = sortedPurchases[0].unitPrice;
       });
     });
@@ -103,7 +112,17 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 px-4 py-2 divide-y divide-slate-100/50 dark:divide-slate-800">
-                {prod.purchases.sort((a, b) => b.date.split('.').reverse().join('-').localeCompare(a.date.split('.').reverse().join('-'))).slice(0, 5).map((pur, pidx) => (
+                {prod.purchases.sort((a, b) => {
+                  const parseDateForSort = (dateStr: string) => {
+                    if (!dateStr) return '0000-00-00';
+                    if (dateStr.includes('.')) {
+                      const [d, m, y] = dateStr.split('.');
+                      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                    }
+                    return dateStr;
+                  };
+                  return parseDateForSort(b.date).localeCompare(parseDateForSort(a.date));
+                }).slice(0, 5).map((pur, pidx) => (
                   <div key={pidx} className="py-2 flex items-center justify-between text-[10px]">
                     <div className="flex flex-col min-w-0 flex-1">
                        <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 truncate">

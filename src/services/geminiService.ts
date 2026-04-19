@@ -42,7 +42,9 @@ export async function extractReceiptData(
         contents: [
           {
             parts: [
-              { text: `Aşağıdaki fiş görselini analiz et ve verileri JSON formatında döndür. Kategoriler: ${categories.join(', ')}` },
+              { text: `Aşağıdaki fiş görselini analiz et ve verileri JSON formatında döndür. 
+                TARİH FORMATI: Daima DD.MM.YYYY (örn: 15.04.2024) şeklinde olmalı. 
+                Kategoriler: ${categories.join(', ')}` },
               {
                 inlineData: {
                   mimeType: "image/jpeg",

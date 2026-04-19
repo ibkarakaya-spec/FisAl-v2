@@ -84,10 +84,19 @@ const App: React.FC = () => {
   };
 
   const activeReceipts = useMemo(() => {
-    // Fişleri tarihe göre (en yeni en üstte) otomatik sıralıyoruz
+    const parseDateForSort = (dateStr: string) => {
+      if (!dateStr) return '0000-00-00';
+      // DD.MM.YYYY veya YYYY-MM-DD formatlarını normalize et
+      if (dateStr.includes('.')) {
+        const [d, m, y] = dateStr.split('.');
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+      return dateStr; // Varsayılan olarak YYYY-MM-DD olduğu varsayılır
+    };
+
     return [...receipts].sort((a, b) => {
-      const dateA = a.date.split('.').reverse().join('-');
-      const dateB = b.date.split('.').reverse().join('-');
+      const dateA = parseDateForSort(a.date);
+      const dateB = parseDateForSort(b.date);
       if (dateA !== dateB) return dateB.localeCompare(dateA);
       return (b.timestamp || 0) - (a.timestamp || 0);
     });
