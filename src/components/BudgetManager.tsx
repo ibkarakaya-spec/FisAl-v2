@@ -40,6 +40,17 @@ export const BudgetManager: React.FC<Props> = ({
   selectedMonth,
   setSelectedMonth
 }) => {
+  const formatDateForDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[0]}`;
+      }
+    }
+    return dateStr;
+  };
+
   const [selectedCategory, setSelectedCategory] = useState<string>('Hepsi');
   const [editingLimitCategory, setEditingLimitCategory] = useState<string | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -94,7 +105,14 @@ export const BudgetManager: React.FC<Props> = ({
 
     return receipts.filter(r => {
       if (selectedMonth === "Hepsi") return true;
-      let rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
+      if (!r.date) return false;
+      let rMonth = '';
+      if (r.date.includes('.')) {
+        const parts = r.date.split('.');
+        rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+      } else if (r.date.includes('-')) {
+        rMonth = r.date.substring(0, 7);
+      }
       return rMonth === selectedMonth;
     }).sort((a, b) => {
       const dateA = parseDateForSort(a.date);
@@ -275,7 +293,7 @@ export const BudgetManager: React.FC<Props> = ({
           <tbody>
             ${filteredReceipts.map(r => `
               <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 12px; font-size: 11px; color: #64748b;">${r.date}</td>
+                <td style="padding: 12px; font-size: 11px; color: #64748b;">${formatDateForDisplay(r.date)}</td>
                 <td style="padding: 12px; font-size: 11px; font-weight: 700; color: #1e1b4b;">${r.vendor.toUpperCase()}</td>
                 <td style="padding: 12px; font-size: 10px;"><span style="background: #f1f5f9; padding: 2px 8px; border-radius: 10px; font-weight: 700; color: #475569;">${r.category.toUpperCase()}</span></td>
                 <td style="padding: 12px; font-size: 12px; font-weight: 800; text-align: right; color: #1e1b4b;">${r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</td>
@@ -462,7 +480,7 @@ export const BudgetManager: React.FC<Props> = ({
                 <div className="flex-1 min-w-0">
                   <span className="font-bold block truncate uppercase text-[10px] text-slate-800 dark:text-slate-100 leading-tight mb-0.5">{r.vendor}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[8px] font-semibold text-slate-400">{r.date}</span>
+                    <span className="text-[8px] font-semibold text-slate-400">{formatDateForDisplay(r.date)}</span>
                     <span className={`text-[7px] font-bold px-1.5 py-0 rounded-full border uppercase tracking-tighter truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
                   </div>
                 </div>

@@ -127,9 +127,13 @@ const App: React.FC = () => {
     }
 
     activeReceipts.forEach(r => {
-      if (r.date && r.date.includes('.')) {
+      if (!r.date) return;
+      if (r.date.includes('.')) {
         const parts = r.date.split('.');
-        if (parts.length === 3) monthsSet.add(`${parts[2]}-${parts[1]}`);
+        if (parts.length === 3) monthsSet.add(`${parts[2]}-${parts[1].padStart(2, '0')}`);
+      } else if (r.date.includes('-')) {
+        const parts = r.date.split('-');
+        if (parts.length === 3) monthsSet.add(`${parts[0]}-${parts[1].padStart(2, '0')}`);
       }
     });
 
@@ -317,7 +321,14 @@ const App: React.FC = () => {
                   <ReceiptTable 
                     receipts={activeReceipts.filter(r => {
                       if (dashboardMonth === 'Hepsi') return true;
-                      const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
+                      if (!r.date) return false;
+                      let rMonth = '';
+                      if (r.date.includes('.')) {
+                        const parts = r.date.split('.');
+                        rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+                      } else if (r.date.includes('-')) {
+                        rMonth = r.date.substring(0, 7);
+                      }
                       return rMonth === dashboardMonth;
                     })}
                     onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 

@@ -10,6 +10,17 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  const formatDateForDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[0]}`;
+      }
+    }
+    return dateStr;
+  };
+
   const productData = useMemo(() => {
     const history: Record<string, {
       name: string;
@@ -133,7 +144,7 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                             </button>
                           )}
                        </span>
-                       <span className="text-[8px] text-slate-400 flex items-center gap-1 mt-0.5"><Calendar size={9} /> {pur.date}</span>
+                       <span className="text-[8px] text-slate-400 flex items-center gap-1 mt-0.5"><Calendar size={9} /> {formatDateForDisplay(pur.date)}</span>
                     </div>
                     <div className="flex flex-col items-end flex-shrink-0 ml-4">
                        <span className="font-black text-slate-900 dark:text-slate-100 tabular-nums">

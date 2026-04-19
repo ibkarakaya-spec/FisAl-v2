@@ -28,6 +28,18 @@ export const getCategoryColor = (category: string) => {
 };
 
 export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) => {
+  const formatDateForDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        // YYYY-MM-DD -> DD.MM.YYYY
+        return `${parts[2].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[0]}`;
+      }
+    }
+    return dateStr;
+  };
+
   if (receipts.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center opacity-60">
@@ -55,7 +67,7 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
                 {r.imageUrl && <ImageIcon size={10} className="text-indigo-400 flex-shrink-0" />}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[8px] font-semibold text-slate-400 shrink-0">{r.date}</span>
+                <span className="text-[8px] font-semibold text-slate-400 shrink-0">{formatDateForDisplay(r.date)}</span>
                 <span className={`text-[7px] font-bold px-1.5 py-0 rounded-full border uppercase tracking-tighter truncate max-w-[80px] ${getCategoryColor(r.category)}`}>
                   {r.category}
                 </span>
