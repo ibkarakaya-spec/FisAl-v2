@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive
 } from 'lucide-react';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
@@ -32,6 +32,79 @@ const App: React.FC = () => {
   const [dashboardMonth, setDashboardMonth] = useState<string>(() => {
     return localStorage.getItem('app_last_selected_month') || "Hepsi";
   });
+
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [isExportingToDrive, setIsExportingToDrive] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/google/status')
+      .then(r => r.json())
+      .then(data => setIsGoogleConnected(data.connected))
+      .catch(err => console.error(err));
+  }, []);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS' && event.data.service === 'google_drive') {
+        setIsGoogleConnected(true);
+        alert("Google Drive bağlantısı başarıyla kuruldu!");
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleConnectGoogleDrive = async () => {
+    try {
+      const res = await fetch('/api/auth/google/url');
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      window.open(data.url, 'google_auth', 'width=600,height=700');
+    } catch (e) {
+      console.error(e);
+      alert("Bağlantı URL'i alınamadı. Server ayarlarını kontrol edin.");
+    }
+  };
+
+  const handleExportToGoogleDrive = async () => {
+    if (!isGoogleConnected) {
+      handleConnectGoogleDrive();
+      return;
+    }
+
+    setIsExportingToDrive(true);
+    try {
+      const res = await fetch('/api/drive/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: receipts,
+          filename: `fis_ai_full_backup_${new Date().toISOString().split('T')[0]}.json`
+        })
+      });
+      
+      const result = await res.json();
+      if (res.ok) {
+        alert("Veriler Google Drive'a başarıyla yüklendi!");
+      } else {
+        if (res.status === 401) {
+          setIsGoogleConnected(false);
+          alert("Oturum süresi dolmuş. Lütfen tekrar bağlanın.");
+          handleConnectGoogleDrive();
+        } else {
+          alert("Hata: " + (result.error || "Yükleme başarısız."));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Yükleme sırasında teknik bir hata oluştu.");
+    } finally {
+      setIsExportingToDrive(false);
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -370,8 +443,26 @@ const App: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <button onClick={() => importInputRef.current?.click()} className="py-4 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">İçe Aktar</button>
-                    <button onClick={handleExportData} className="py-4 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Dışa Aktar</button>
+                    <button onClick={handleExportData} className="py-4 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest">Cihaza Kaydet</button>
                   </div>
+                  
+                  <button 
+                    onClick={handleExportToGoogleDrive} 
+                    disabled={isExportingToDrive}
+                    className={`w-full py-4 flex items-center justify-center gap-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                      isGoogleConnected 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {isExportingToDrive ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : (
+                      <CloudIcon size={16} />
+                    )}
+                    {isGoogleConnected ? "Google Drive'a Yedekle" : "Google Drive'ı Bağla"}
+                  </button>
+
                   <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
                 </div>
               </div>
