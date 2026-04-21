@@ -117,18 +117,24 @@ const App: React.FC = () => {
       try {
         const imported = JSON.parse(event.target?.result as string);
         if (Array.isArray(imported)) {
-          const formattedReceipts: ReceiptData[] = imported.map((r: any) => ({
-            id: Math.random().toString(36).substr(2, 9),
-            vendor: r.vendor || 'BİLİNMEYEN',
-            date: r.date || new Date().toLocaleDateString('tr-TR'),
-            total: typeof r.price === 'number' ? r.price : parseFloat(String(r.price).replace(',', '.')) || 0,
-            currency: '₺',
-            category: r.category || 'Gıda ve Market',
-            tax: 0,
-            items: [],
-            confidence: 1,
-            timestamp: Date.now(),
-          }));
+          const formattedReceipts: ReceiptData[] = imported.map((r: any) => {
+            const rawPrice = r.total ?? r.price ?? r.ucret ?? r.amount;
+            const parsedPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(',', '.')) || 0;
+            
+            return {
+              id: r.id || Math.random().toString(36).substr(2, 9),
+              vendor: (r.vendor || r.market || 'BİLİNMEYEN').toUpperCase(),
+              date: r.date || r.tarih || new Date().toLocaleDateString('tr-TR'),
+              total: parsedPrice,
+              currency: r.currency || '₺',
+              category: r.category || r.kategori || 'Gıda ve Market',
+              tax: r.tax || 0,
+              items: Array.isArray(r.items) ? r.items : [],
+              confidence: r.confidence || 1,
+              timestamp: r.timestamp || Date.now(),
+              imageUrl: r.imageUrl
+            };
+          });
           setReceipts(prev => [...prev, ...formattedReceipts]);
           alert("Veriler başarıyla içe aktarıldı.");
         }
