@@ -11,12 +11,12 @@ export const DEFAULT_CATEGORIES = [
   'Mobilya'
 ];
 
-// Model rotasyonu için kullanılacak modeller (Sadece izin verilen ve güncel modeller)
+// Model rotasyonu için kullanılacak modeller (Hızdan kaliteye doğru sıralı)
 const MODELS = [
-  "gemini-3-flash-preview",
-  "gemini-3.1-flash-lite-preview",
-  "gemini-3.1-pro-preview",
-  "gemini-flash-latest"
+  "gemini-3.1-flash-lite-preview", // En hızlı (Lite)
+  "gemini-flash-latest",          // Çok hızlı (Flash 2.0)
+  "gemini-3-flash-preview",       // Dengeli (Flash 3.0)
+  "gemini-3.1-pro-preview",       // En kaliteli (Pro)
 ];
 
 export async function extractReceiptData(
@@ -44,6 +44,7 @@ export async function extractReceiptData(
             parts: [
               { text: `Aşağıdaki fiş görselini analiz et ve verileri JSON formatında döndür. 
                 TARİH FORMATI: Daima DD.MM.YYYY (örn: 15.04.2024) şeklinde olmalı. 
+                MAĞAZA ADI: Fişteki mağaza adını büyük harflerle yaz.
                 Kategoriler: ${categories.join(', ')}` },
               {
                 inlineData: {
@@ -55,7 +56,6 @@ export async function extractReceiptData(
           }
         ],
         config: {
-          // thinkingConfig'i kaldırıyoruz çünkü her modelle uyumlu olmayabilir
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -64,6 +64,7 @@ export async function extractReceiptData(
               date: { type: Type.STRING },
               total: { type: Type.NUMBER },
               category: { type: Type.STRING },
+              confidence: { type: Type.NUMBER, description: "0.0 - 1.0 arası güven skoru" },
               items: {
                 type: Type.ARRAY,
                 items: {
@@ -76,33 +77,30 @@ export async function extractReceiptData(
                   required: ["name", "price"]
                 }
               }
-            }
+            },
+            required: ["vendor", "total", "date"]
           }
         }
       });
 
       const text = response.text?.trim();
       if (text) {
-        return JSON.parse(text);
+        const data = JSON.parse(text);
+        // Eğer bir veri döndüyse başarılı sayıyoruz
+        return data;
       }
       throw new Error("Model boş yanıt döndürdü.");
     } catch (e: any) {
       lastError = e;
       const errorMsg = e.message || "";
-      // Eğer hata limit aşımı veya servis yoğunluğu ise bir sonraki modele geç
-      const isRetryable = 
-        errorMsg.includes('429') || 
-        errorMsg.includes('RESOURCE_EXHAUSTED') || 
-        errorMsg.includes('quota') ||
-        errorMsg.includes('503') ||
-        errorMsg.includes('high demand') ||
-        errorMsg.includes('Service Unavailable');
-
-      if (isRetryable && i < MODELS.length - 1) {
-        console.warn(`${modelName} hatası (${errorMsg}), sıradaki modele geçiliyor...`);
+      
+      // Hatalarda (Limit aşımı, model hatası vb.) sıradaki modele geç
+      if (i < MODELS.length - 1) {
+        const statusMsg = errorMsg.includes('429') ? "Limit doldu, sıradaki modele geçiliyor..." : `${modelName} denemesi başarısız, sıradaki modele geçiliyor...`;
+        if (onStatusUpdate) onStatusUpdate(statusMsg);
+        console.warn(`${modelName} hatası, sıradaki modele geçiliyor...`, errorMsg);
         continue;
       }
-      // Diğer kritik hatalarda (örn: geçersiz görsel) direkt fırlat
       throw e;
     }
   }
