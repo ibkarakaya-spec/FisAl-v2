@@ -59,7 +59,7 @@ export const SpendingTrendChart: React.FC<Props> = ({ receipts, selectedMonth })
             <div className="bg-indigo-50 dark:bg-indigo-950/30 p-1 rounded-lg text-indigo-600">
                <BarChart3 size={12} />
             </div>
-            <h3 className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+            <h3 className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
               {isAll ? 'Aylık Trend' : 'Günlük Dağılım'}
             </h3>
          </div>
@@ -80,7 +80,7 @@ export const SpendingTrendChart: React.FC<Props> = ({ receipts, selectedMonth })
                   className="w-full max-w-[16px] bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-500 rounded-t-[3px] transition-all duration-300"
                   style={{ height: `${heightPercent}%` }}
                 ></div>
-                <span className="text-[7px] font-black text-slate-400 mt-1 truncate w-full text-center">
+                <span className="text-[7px] font-bold text-slate-400 mt-1 truncate w-full text-center">
                    {isAll ? item.label.split('-')[1] : item.label}
                 </span>
              </div>

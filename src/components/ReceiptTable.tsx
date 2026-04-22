@@ -92,7 +92,7 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[13px] font-black text-slate-900 dark:text-slate-100 truncate uppercase tracking-tight font-display leading-none">
+              <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 truncate uppercase tracking-tight font-display leading-none">
                 {r.vendor}
               </span>
               {r.imageUrl && (
@@ -102,17 +102,17 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
               )}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[8px] font-bold text-slate-400 shrink-0 tabular-nums">{formatDateForDisplay(r.date)}</span>
+              <span className="text-[8px] font-medium text-slate-400 shrink-0 tabular-nums">{formatDateForDisplay(r.date)}</span>
               <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-              <span className={`text-[7px] font-black px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[100px] ${getCategoryColor(r.category)}`}>
+              <span className={`text-[7px] font-bold px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[100px] ${getCategoryColor(r.category)}`}>
                 {r.category}
               </span>
             </div>
           </div>
           
           <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
-            <div className="text-sm font-black text-slate-900 dark:text-slate-100 tabular-nums font-display">
-              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[9px] font-bold text-indigo-500">₺</span>
+            <div className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums font-display">
+              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[9px] font-semibold text-indigo-500">₺</span>
             </div>
             <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 

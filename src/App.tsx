@@ -351,11 +351,11 @@ const App: React.FC = () => {
             <div className="flex items-center gap-2">
               <motion.div 
                 whileHover={{ rotate: 15 }}
-                className="bg-indigo-600 rounded-xl text-white font-black w-8 h-8 flex items-center justify-center text-sm shadow-lg shadow-indigo-500/30"
+                className="bg-indigo-600 rounded-xl text-white font-semibold w-8 h-8 flex items-center justify-center text-sm shadow-lg shadow-indigo-500/30"
               >
                 ₺
               </motion.div>
-              <h1 className="text-sm font-black uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+              <h1 className="text-sm font-semibold uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                 Fiş<span className="text-indigo-600">AI</span>
               </h1>
             </div>
@@ -384,8 +384,8 @@ const App: React.FC = () => {
                      <Loader2 size={24} className="animate-spin" />
                    </div>
                    <div className="text-center">
-                     <span className="text-[10px] font-black uppercase tracking-[0.2em] block mb-1 opacity-70">İşlem Yapılıyor</span>
-                     <span className="text-xs font-bold">{statusText}</span>
+                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] block mb-1 opacity-70">İşlem Yapılıyor</span>
+                     <span className="text-xs font-semibold">{statusText}</span>
                    </div>
                 </motion.div>
               )}
@@ -405,8 +405,8 @@ const App: React.FC = () => {
                     
                     <div className="flex justify-between items-start mb-1.5">
                       <div className="space-y-0.5">
-                        <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
-                        <div className="text-3xl font-black tracking-tight tabular-nums flex items-baseline gap-1 font-display">
+                        <span className="text-[9px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
+                        <div className="text-3xl font-semibold tracking-tight tabular-nums flex items-baseline gap-1 font-display">
                           {activeReceipts
                             .filter(r => {
                               if (dashboardMonth === 'Hepsi') return true;
@@ -435,13 +435,13 @@ const App: React.FC = () => {
 
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
-                        <span className="text-lg font-black font-display">{activeReceipts.length}</span>
+                        <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
+                        <span className="text-lg font-semibold font-display">{activeReceipts.length}</span>
                       </div>
                       <div className="h-6 w-px bg-slate-100 dark:bg-slate-800"></div>
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ortalama</span>
-                        <span className="text-lg font-black font-display">
+                        <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Ortalama</span>
+                        <span className="text-lg font-semibold font-display">
                           {(activeReceipts.length > 0 ? activeReceipts.reduce((s, r) => s + r.total, 0) / activeReceipts.length : 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
                           <span className="text-xs ml-0.5 opacity-40">₺</span>
                         </span>
@@ -458,15 +458,15 @@ const App: React.FC = () => {
                   >
                      <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                      <Plus size={20} className="relative z-10" /> 
-                     <span className="text-xs font-black uppercase tracking-widest relative z-10">Fiş Tara</span>
+                     <span className="text-xs font-semibold uppercase tracking-widest relative z-10">Fiş Tara</span>
                   </motion.button>
                 </div>
 
                 <div className="pt-2">
                   <div className="flex justify-between items-center mb-4 px-2">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Son İşlemler</h3>
-                    <div className="h-px flex-1 mx-4 bg-slate-100 dark:bg-slate-800"></div>
-                  </div>
+                    <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em]">Son İşlemler</h3>
+                        <div className="h-px flex-1 mx-4 bg-slate-100 dark:bg-slate-800"></div>
+                      </div>
                   
                   <ReceiptTable 
                     receipts={activeReceipts.filter(r => {
@@ -514,19 +514,19 @@ const App: React.FC = () => {
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
               <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[24px] p-6 space-y-4 shadow-2xl border dark:border-slate-800">
                 <div className="flex justify-between items-center mb-1">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ayarlar</h3>
-                  <button onClick={() => setShowSettings(false)} className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 font-bold"><X size={16} /></button>
+                  <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Ayarlar</h3>
+                  <button onClick={() => setShowSettings(false)} className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 font-semibold"><X size={16} /></button>
                 </div>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2.5">
-                    <button onClick={() => importInputRef.current?.click()} className="py-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-indigo-100">İçe Aktar</button>
-                    <button onClick={handleExportData} className="py-3 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors hover:bg-emerald-100">Cihaza Kaydet</button>
+                    <button onClick={() => importInputRef.current?.click()} className="py-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-colors hover:bg-indigo-100">İçe Aktar</button>
+                    <button onClick={handleExportData} className="py-3 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-colors hover:bg-emerald-100">Cihaza Kaydet</button>
                   </div>
                   
                   <button 
                     onClick={handleExportToGoogleDrive} 
                     disabled={isExportingToDrive}
-                    className={`w-full py-3 flex items-center justify-center gap-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                    className={`w-full py-3 flex items-center justify-center gap-2.5 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-all ${
                       isGoogleConnected 
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
@@ -586,8 +586,8 @@ const App: React.FC = () => {
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  <item.icon size={18} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-                  <span className="text-[7.5px] font-black uppercase tracking-tight">{item.label}</span>
+                  <item.icon size={18} strokeWidth={activeTab === item.id ? 2 : 1.5} />
+                  <span className="text-[7.5px] font-semibold uppercase tracking-tight">{item.label}</span>
                 </button>
               ))}
             </div>

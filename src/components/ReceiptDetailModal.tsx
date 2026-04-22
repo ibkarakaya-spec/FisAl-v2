@@ -78,7 +78,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                     whileTap={{ scale: 0.95 }}
                     onClick={handleRotate} 
                     disabled={isRotating} 
-                    className="p-2.5 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 rounded-xl shadow-xl flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest backdrop-blur-md"
+                    className="p-2.5 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 rounded-xl shadow-xl flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest backdrop-blur-md"
                   >
                     {isRotating ? <RefreshCw size={12} className="animate-spin" /> : <RotateCw size={12} />} 90°
                   </motion.button>
@@ -87,7 +87,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setIsFullScreen(true)} 
-                  className="absolute bottom-4 right-4 p-2.5 bg-indigo-600 text-white rounded-xl shadow-xl flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest"
+                  className="absolute bottom-4 right-4 p-2.5 bg-indigo-600 text-white rounded-xl shadow-xl flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest"
                 >
                   <Maximize2 size={12} /> Büyüt
                 </motion.button>
@@ -107,7 +107,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                     <ShoppingBag size={18} />
                  </div>
                  <div>
-                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight font-display">Kayıt <span className="text-indigo-600">Detayları</span></h3>
+                    <h3 className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-tight font-display">Kayıt <span className="text-indigo-600">Detayları</span></h3>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ID: {receipt.id.slice(0, 8)}</p>
                  </div>
               </div>
@@ -116,7 +116,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSave} 
-                  className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:shadow-inner"
+                  className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[9px] font-semibold uppercase tracking-widest shadow-lg active:shadow-inner"
                 >
                   Güncelle
                 </motion.button>
@@ -128,20 +128,20 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
               <section className="space-y-1">
                 <div className="flex items-center gap-2 mb-0.5">
                    <div className="w-1 h-3 bg-indigo-600 rounded-full"></div>
-                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Genel Bilgiler</h4>
+                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Genel Bilgiler</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div className="space-y-0.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">İşletme Adı</label>
-                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-black text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all shadow-inner" value={editData.vendor} onChange={e => setEditData({...editData, vendor: e.target.value})} />
+                    <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest ml-1">İşletme Adı</label>
+                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all shadow-inner" value={editData.vendor} onChange={e => setEditData({...editData, vendor: e.target.value})} />
                   </div>
                   <div className="space-y-0.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">İşlem Tarihi</label>
-                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-black text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all tabular-nums shadow-inner" value={editData.date} onChange={e => setEditData({...editData, date: e.target.value})} />
+                    <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest ml-1">İşlem Tarihi</label>
+                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all tabular-nums shadow-inner" value={editData.date} onChange={e => setEditData({...editData, date: e.target.value})} />
                   </div>
                   <div className="col-span-1 md:col-span-2 space-y-0.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
-                    <select className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-black text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all cursor-pointer appearance-none shadow-inner" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})}>
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
+                    <select className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all cursor-pointer appearance-none shadow-inner" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})}>
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
@@ -158,7 +158,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setEditData({...editData, items: [...editData.items, {name: '', price: 0, quantity: 1}]})} 
-                    className="text-[10px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-2 rounded-xl"
+                    className="text-[10px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-2 rounded-xl"
                   >
                     + YENİ ÜRÜN
                   </motion.button>
@@ -185,7 +185,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                         <div className="w-28 space-y-1">
                            <label className="text-[8px] font-bold text-slate-300 uppercase tracking-widest ml-1">Fiyat</label>
                            <div className="relative">
-                              <input type="number" className="w-full bg-white dark:bg-slate-800 border-none px-4 py-2 pl-6 rounded-xl text-[11px] font-black text-right dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" value={item.price} onChange={e => handleItemChange(idx, 'price', e.target.value)} />
+                              <input type="number" className="w-full bg-white dark:bg-slate-800 border-none px-4 py-2 pl-6 rounded-xl text-[11px] font-bold text-right dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" value={item.price} onChange={e => handleItemChange(idx, 'price', e.target.value)} />
                               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-300 font-bold text-[10px]">₺</div>
                            </div>
                         </div>
@@ -206,8 +206,8 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
               <div className="pt-4 sticky bottom-0 bg-white dark:bg-slate-900 z-20 pb-4">
                 <div className="bg-indigo-600 rounded-[28px] p-6 text-white flex justify-between items-center shadow-2xl shadow-indigo-200 dark:shadow-none border border-white/10">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">Hesaplanan Toplam</span>
-                    <div className="text-3xl font-black tabular-nums font-display">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-70 mb-1">Hesaplanan Toplam</span>
+                    <div className="text-3xl font-bold tabular-nums font-display">
                       {editData.items.reduce((s, i) => s + (Number(i.price) || 0), 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-lg ml-1 opacity-50">₺</span>
                     </div>
                   </div>
