@@ -60,96 +60,96 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col md:flex-row border border-white/10 dark:border-slate-800"
+          className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col md:flex-row border border-white/10 dark:border-slate-800"
         >
-          <div className="w-full md:w-5/12 bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-3 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 h-72 md:h-auto relative group">
+          <div className="w-full md:w-5/12 bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-2 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 h-64 md:h-auto relative group">
             {editData.imageUrl ? (
               <>
                 <motion.img 
                   layoutId={receipt.id}
                   src={editData.imageUrl} 
-                  className="max-w-full max-h-full rounded-3xl shadow-xl object-contain cursor-zoom-in group-hover:scale-[1.02] transition-transform duration-500" 
+                  className="max-w-full max-h-full rounded-2xl shadow-xl object-contain cursor-zoom-in group-hover:scale-[1.02] transition-transform duration-500" 
                   alt="fiş" 
                   onClick={() => setIsFullScreen(true)} 
                 />
-                <div className="absolute bottom-6 left-6 flex gap-2">
+                <div className="absolute bottom-4 left-4 flex gap-2">
                   <motion.button 
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleRotate} 
                     disabled={isRotating} 
-                    className="p-3 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 rounded-2xl shadow-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest backdrop-blur-md"
+                    className="p-2.5 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 rounded-xl shadow-xl flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest backdrop-blur-md"
                   >
-                    {isRotating ? <RefreshCw size={14} className="animate-spin" /> : <RotateCw size={14} />} 90°
+                    {isRotating ? <RefreshCw size={12} className="animate-spin" /> : <RotateCw size={12} />} 90°
                   </motion.button>
                 </div>
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setIsFullScreen(true)} 
-                  className="absolute bottom-6 right-6 p-3 bg-indigo-600 text-white rounded-2xl shadow-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                  className="absolute bottom-4 right-4 p-2.5 bg-indigo-600 text-white rounded-xl shadow-xl flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest"
                 >
-                  <Maximize2 size={14} /> Büyüt
+                  <Maximize2 size={12} /> Büyüt
                 </motion.button>
               </>
             ) : (
               <div className="text-slate-300 dark:text-slate-800 flex flex-col items-center opacity-40">
-                <Store size={64} />
-                <span className="text-[10px] font-black mt-4 uppercase tracking-[0.2em]">Görsel Bulunmuyor</span>
+                <Store size={48} />
+                <span className="text-[9px] font-black mt-3 uppercase tracking-[0.2em]">Görsel Bulunmuyor</span>
               </div>
             )}
           </div>
 
           <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-slate-900">
-            <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10">
-              <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl flex items-center justify-center text-indigo-600">
-                    <ShoppingBag size={20} />
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10">
+              <div className="flex items-center gap-2.5">
+                 <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl flex items-center justify-center text-indigo-600">
+                    <ShoppingBag size={18} />
                  </div>
                  <div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight font-display">Kayıt <span className="text-indigo-600">Detayları</span></h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {receipt.id.slice(0, 8)}</p>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight font-display">Kayıt <span className="text-indigo-600">Detayları</span></h3>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ID: {receipt.id.slice(0, 8)}</p>
                  </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSave} 
-                  className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg active:shadow-inner"
+                  className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:shadow-inner"
                 >
                   Güncelle
                 </motion.button>
-                <button onClick={onClose} className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl text-slate-400 transition-colors"><X size={20} /></button>
+                <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"><X size={18} /></button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+              <section className="space-y-1">
+                <div className="flex items-center gap-2 mb-0.5">
                    <div className="w-1 h-3 bg-indigo-600 rounded-full"></div>
                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Genel Bilgiler</h4>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="space-y-0.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">İşletme Adı</label>
-                    <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-[20px] font-black text-sm outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all" value={editData.vendor} onChange={e => setEditData({...editData, vendor: e.target.value})} />
+                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-black text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all shadow-inner" value={editData.vendor} onChange={e => setEditData({...editData, vendor: e.target.value})} />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-0.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">İşlem Tarihi</label>
-                    <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-[20px] font-black text-sm outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all tabular-nums" value={editData.date} onChange={e => setEditData({...editData, date: e.target.value})} />
+                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-black text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all tabular-nums shadow-inner" value={editData.date} onChange={e => setEditData({...editData, date: e.target.value})} />
                   </div>
-                  <div className="col-span-1 md:col-span-2 space-y-1.5">
+                  <div className="col-span-1 md:col-span-2 space-y-0.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
-                    <select className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-[20px] font-black text-sm outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all cursor-pointer appearance-none" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})}>
+                    <select className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-black text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all cursor-pointer appearance-none shadow-inner" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})}>
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                 </div>
               </section>
 
-              <section className="space-y-4">
-                <div className="flex items-center justify-between mb-2">
+              <section className="space-y-2">
+                <div className="flex items-center justify-between mb-0.5">
                    <div className="flex items-center gap-2">
                       <div className="w-1 h-3 bg-indigo-600 rounded-full"></div>
                       <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ürün Listesi</h4>
@@ -163,7 +163,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                     + YENİ ÜRÜN
                   </motion.button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <AnimatePresence mode="popLayout">
                     {editData.items.map((item, idx) => (
                       <motion.div 
@@ -172,7 +172,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 10 }}
                         key={idx} 
-                        className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[24px] border border-slate-100 dark:border-slate-800 flex gap-4 items-center group/item hover:border-indigo-200 transition-colors"
+                        className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-[24px] border border-slate-100 dark:border-slate-800 flex gap-3.5 items-center group/item hover:border-indigo-200 transition-colors"
                       >
                         <div className="flex-1 space-y-1">
                            <label className="text-[8px] font-bold text-slate-300 uppercase tracking-widest ml-1">Ürün Adı</label>

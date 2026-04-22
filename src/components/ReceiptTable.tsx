@@ -75,7 +75,7 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
       variants={container}
       initial="hidden"
       animate="show"
-      className="space-y-3"
+      className="space-y-0"
     >
       {receipts.map((r) => (
         <motion.div 
@@ -84,45 +84,44 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
           whileHover={{ scale: 1.01, x: 2 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => onView(r)} 
-          className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 dark:border-slate-800/60 p-4 flex items-center gap-4 transition-all hover:border-indigo-200 dark:hover:border-indigo-900/50 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none cursor-pointer"
+          className="group bg-white dark:bg-slate-900 rounded-[20px] border border-slate-200/50 dark:border-slate-800/60 p-1.5 flex items-center gap-2 transition-all hover:border-indigo-200 dark:hover:border-indigo-900/50 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none cursor-pointer"
         >
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-inner ${getCategoryColor(r.category).split(' ')[0]}`}>
-             <div className={`w-2 h-2 rounded-full ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-inner ${getCategoryColor(r.category).split(' ')[0]}`}>
+             <div className={`w-1.5 h-1.5 rounded-full ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
           </div>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-black text-slate-900 dark:text-slate-100 truncate uppercase tracking-tight font-display">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[13px] font-black text-slate-900 dark:text-slate-100 truncate uppercase tracking-tight font-display leading-none">
                 {r.vendor}
               </span>
               {r.imageUrl && (
-                <div className="p-1 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500">
-                  <ImageIcon size={10} />
+                <div className="p-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500">
+                  <ImageIcon size={8} />
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold text-slate-400 shrink-0 tabular-nums">{formatDateForDisplay(r.date)}</span>
-              <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-              <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider truncate max-w-[100px] ${getCategoryColor(r.category)}`}>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8px] font-bold text-slate-400 shrink-0 tabular-nums">{formatDateForDisplay(r.date)}</span>
+              <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+              <span className={`text-[7px] font-black px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[100px] ${getCategoryColor(r.category)}`}>
                 {r.category}
               </span>
             </div>
           </div>
           
-          <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
-            <div className="text-base font-black text-slate-900 dark:text-slate-100 tabular-nums font-display">
-              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[10px] font-bold text-indigo-500">₺</span>
+          <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
+            <div className="text-sm font-black text-slate-900 dark:text-slate-100 tabular-nums font-display">
+              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[9px] font-bold text-indigo-500">₺</span>
             </div>
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete(r.id); }} 
-                className="p-1.5 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-slate-50 dark:bg-slate-800 rounded-lg transition-colors"
-                title="Silt"
+                className="p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-slate-50 dark:bg-slate-800 rounded-md transition-colors"
               >
-                <Trash2 size={14} />
+                <Trash2 size={12} />
               </button>
-              <ChevronRight size={16} className="text-slate-300" />
+              <ChevronRight size={14} className="text-slate-300" />
             </div>
           </div>
         </motion.div>
