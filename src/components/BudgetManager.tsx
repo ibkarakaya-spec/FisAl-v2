@@ -10,9 +10,12 @@ import {
   Repeat,
   Settings,
   X,
-  FileDown
+  FileDown,
+  ArrowUpRight,
+  TrendingDown
 } from 'lucide-react';
 import { getCategoryColor } from './ReceiptTable.tsx';
+import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -351,14 +354,18 @@ export const BudgetManager: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="no-print space-y-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="no-print space-y-4"
+      >
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200/50 dark:border-slate-800 shadow-sm overflow-hidden">
           <table className="w-full text-left table-fixed">
-            <thead className="bg-slate-50 dark:bg-slate-800/40 text-[8px] font-bold text-slate-400 uppercase tracking-widest border-b dark:border-slate-800">
+            <thead className="bg-slate-50 dark:bg-slate-800/40 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b dark:border-slate-800">
               <tr>
-                <th className="px-3 py-2.5 w-4/12">KATEGORİ</th>
-                <th className="px-1 py-2.5 text-right w-4/12">LİMİT (₺)</th>
-                <th className="px-1 py-2.5 text-right w-4/12">KALAN (₺)</th>
+                <th className="px-4 py-3 w-4/12">KATEGORİ</th>
+                <th className="px-1 py-3 text-right w-4/12">LİMİT</th>
+                <th className="px-1 py-3 text-right w-4/12 pr-4">KALAN</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -368,10 +375,10 @@ export const BudgetManager: React.FC<Props> = ({
                 const isEditing = editingLimitCategory === l.category;
                 
                 return (
-                  <tr key={l.category} className="text-[10px] dark:text-slate-400">
-                    <td className="px-3 py-2 font-semibold truncate uppercase">{l.category}</td>
+                  <tr key={l.category} className="text-[10px] dark:text-slate-400 group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-4 py-3 font-bold truncate uppercase tracking-tight text-slate-800 dark:text-slate-200">{l.category}</td>
                     <td 
-                      className="px-1 py-2 text-right cursor-pointer group" 
+                      className="px-1 py-3 text-right cursor-pointer" 
                       onClick={() => setEditingLimitCategory(l.category)}
                     >
                       {isEditing ? (
@@ -383,18 +390,18 @@ export const BudgetManager: React.FC<Props> = ({
                             onBlur={() => setEditingLimitCategory(null)}
                             onChange={e => handleLimitChange(l.category, e.target.value)} 
                             onKeyDown={e => e.key === 'Enter' && setEditingLimitCategory(null)}
-                            className="w-full bg-slate-100 dark:bg-slate-800 border-none text-right text-[11px] font-bold text-indigo-500 outline-none rounded px-1" 
+                            className="w-full bg-slate-100 dark:bg-slate-800 border-none text-right text-[11px] font-black text-indigo-500 outline-none rounded px-2 py-1 shadow-inner font-display" 
                             placeholder="0" 
                           />
                         </div>
                       ) : (
-                        <div className="text-[11px] font-semibold text-indigo-500 tabular-nums">
-                          {l.limit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[10px] font-bold">₺</span>
+                        <div className="text-[12px] font-black text-indigo-500 tabular-nums font-display group-hover:underline decoration-indigo-200">
+                          {l.limit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[10px] ml-0.5 opacity-50">₺</span>
                         </div>
                       )}
                     </td>
-                    <td className={`px-1 py-2 text-right font-bold tabular-nums ${remaining < 0 ? 'text-red-500' : 'dark:text-slate-100'}`}>
-                      {remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺
+                    <td className={`px-1 py-3 pr-4 text-right font-black tabular-nums font-display ${remaining < 0 ? 'text-rose-500' : 'text-slate-900 dark:text-slate-100'}`}>
+                      {remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[10px] ml-0.5 opacity-40 text-slate-400">₺</span>
                     </td>
                   </tr>
                 );
@@ -403,96 +410,166 @@ export const BudgetManager: React.FC<Props> = ({
           </table>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <input placeholder="Harcama Adı" className="w-full bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-xl text-[10px] font-semibold uppercase outline-none" value={manualForm.konu} onChange={e => setManualForm({...manualForm, konu: e.target.value})} />
-            <input placeholder="Market" className="w-full bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-xl text-[10px] font-semibold uppercase outline-none" value={manualForm.market} onChange={e => setManualForm({...manualForm, market: e.target.value})} />
+        <motion.div 
+          whileHover={{ scale: 1.01 }}
+          className="bg-white dark:bg-slate-900 rounded-[32px] p-4 border border-slate-200/50 dark:border-slate-800 shadow-sm space-y-3 group"
+        >
+          <div className="flex items-center gap-2 px-1 mb-1">
+             <div className="w-1 h-3 bg-indigo-600 rounded-full"></div>
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hızlı İşlem</span>
           </div>
-          <div className="flex gap-2">
-            <select className="flex-1 bg-slate-50 dark:bg-slate-800 px-2 py-2 rounded-xl text-[10px] font-bold uppercase outline-none" value={manualForm.kategori} onChange={e => setManualForm({...manualForm, kategori: e.target.value})}>
+          <div className="grid grid-cols-2 gap-3">
+            <input placeholder="Harcama Adı" className="w-full bg-slate-50 dark:bg-slate-800 px-4 py-3 rounded-2xl text-[10px] font-bold uppercase outline-none focus:ring-2 ring-indigo-500/10 transition-all" value={manualForm.konu} onChange={e => setManualForm({...manualForm, konu: e.target.value})} />
+            <input placeholder="Market/Mağaza" className="w-full bg-slate-50 dark:bg-slate-800 px-4 py-3 rounded-2xl text-[10px] font-bold uppercase outline-none focus:ring-2 ring-indigo-500/10 transition-all" value={manualForm.market} onChange={e => setManualForm({...manualForm, market: e.target.value})} />
+          </div>
+          <div className="flex gap-3">
+            <select className="flex-1 bg-slate-50 dark:bg-slate-800 px-3 py-3 rounded-2xl text-[10px] font-black uppercase outline-none cursor-pointer" value={manualForm.kategori} onChange={e => setManualForm({...manualForm, kategori: e.target.value})}>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input type="date" className="flex-1 bg-slate-50 dark:bg-slate-800 px-2 py-2 rounded-xl text-[10px] font-bold outline-none" value={manualForm.tarih} onChange={e => setManualForm({...manualForm, tarih: e.target.value})} />
+            <input type="date" className="flex-1 bg-slate-50 dark:bg-slate-800 px-4 py-3 rounded-2xl text-[10px] font-bold outline-none" value={manualForm.tarih} onChange={e => setManualForm({...manualForm, tarih: e.target.value})} />
           </div>
-          <div className="flex items-center gap-2">
-            <input placeholder="Tutar (₺)" className="flex-1 bg-indigo-50/30 dark:bg-slate-800 px-3 py-2 rounded-xl text-xs font-bold text-right outline-none" value={manualForm.ucret} onChange={e => setManualForm({...manualForm, ucret: e.target.value})} />
-            <button onClick={handleAddManual} className="bg-indigo-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform"><Plus size={20} /></button>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 relative">
+              <input placeholder="0.00" className="w-full bg-indigo-50/30 dark:bg-slate-800 px-4 py-4 rounded-2xl text-lg font-black text-right outline-none font-display text-indigo-600" value={manualForm.ucret} onChange={e => setManualForm({...manualForm, ucret: e.target.value})} />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-300 font-black">₺</div>
+            </div>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={handleAddManual} 
+              className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 w-14 h-14 rounded-[20px] flex items-center justify-center shadow-lg hover:bg-black transition-colors"
+            >
+              <Plus size={24} />
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="space-y-3">
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-1 overflow-x-auto no-scrollbar px-1 pb-1">
-              <button onClick={() => setSelectedCategory('Hepsi')} className={`px-4 py-1.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap border transition-all ${selectedCategory === 'Hepsi' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800'}`}>HEPSİ</button>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 pb-1">
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedCategory('Hepsi')} 
+                className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase whitespace-nowrap border transition-all ${selectedCategory === 'Hepsi' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200/60 dark:border-slate-800 hover:border-slate-300'}`}
+              >
+                HEPSİ
+              </motion.button>
               {categories.map(cat => (
-                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-1.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap border transition-all ${selectedCategory === cat ? getCategoryColor(cat) + ' shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800'}`}>{cat}</button>
+                <motion.button 
+                  whileTap={{ scale: 0.95 }}
+                  key={cat} 
+                  onClick={() => setSelectedCategory(cat)} 
+                  className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase whitespace-nowrap border transition-all ${selectedCategory === cat ? getCategoryColor(cat) + ' border-transparent shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200/60 dark:border-slate-800 hover:border-slate-300'}`}
+                >
+                  {cat}
+                </motion.button>
               ))}
             </div>
 
-            <div className="bg-indigo-600 dark:bg-indigo-700 rounded-3xl p-4 text-white shadow-xl border border-white/10 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-bold uppercase tracking-widest opacity-60">{selectedCategory === 'Hepsi' ? 'Toplam Harcama' : selectedCategory}</span>
-                  <div className="text-2xl font-extrabold tracking-tighter tabular-nums">{categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</div>
-                </div>
-                <div className="bg-white/20 p-2 rounded-2xl"><TrendingUp size={20} /></div>
+            <motion.div 
+              layout
+              className="bg-indigo-600 dark:bg-indigo-700 rounded-[32px] p-6 text-white shadow-xl shadow-indigo-100 dark:shadow-none border border-white/10 relative overflow-hidden group"
+            >
+              <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
+                <TrendingUp size={140} />
               </div>
               
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <BarChart size={10} className="opacity-60" />
-                  <span className="text-[7px] font-bold uppercase tracking-widest opacity-60">Haftalık Dağılım</span>
+              <div className="flex items-center justify-between mb-6 relative z-10">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">{selectedCategory === 'Hepsi' ? 'Toplam Harcama' : selectedCategory}</span>
+                  <div className="text-4xl font-black tracking-tighter tabular-nums font-display">
+                    {categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-lg ml-1 opacity-50">₺</span>
+                  </div>
                 </div>
-                <div className="flex gap-1.5 items-end h-8">
+                <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl">
+                  <ArrowUpRight size={24} />
+                </div>
+              </div>
+              
+              <div className="space-y-3 relative z-10">
+                <div className="flex items-center gap-2">
+                  <BarChart size={12} className="opacity-70" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70">Haftalık Analiz</span>
+                </div>
+                <div className="flex gap-2 items-end h-12">
                   {weeklyStats.map((val, idx) => {
                     const h = (val / maxWeekly) * 100;
                     return (
                       <div 
                         key={idx} 
-                        className="flex-1 flex flex-col items-center gap-1 group relative h-full cursor-pointer"
+                        className="flex-1 flex flex-col items-center gap-1.5 group/week relative h-full cursor-pointer"
                         onClick={() => setActiveWeekTooltip(activeWeekTooltip === idx ? null : idx)}
                       >
-                        {activeWeekTooltip === idx && (
-                          <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[7px] font-bold py-1 px-1.5 rounded-lg shadow-xl z-30 whitespace-nowrap animate-in fade-in slide-in-from-bottom-1">
-                            {val.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}₺
-                          </div>
-                        )}
+                        <AnimatePresence>
+                          {activeWeekTooltip === idx && (
+                            <motion.div 
+                              initial={{ opacity: 0, scale: 0.8, y: 5 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.8, y: 5 }}
+                              className="absolute -top-9 left-1/2 -translate-x-1/2 bg-white text-indigo-600 text-[10px] font-black py-1.5 px-3 rounded-xl shadow-2xl z-30 whitespace-nowrap"
+                            >
+                              {val.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}₺
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                         
-                        <div className="w-full bg-white/10 rounded-sm overflow-hidden h-full flex items-end">
-                          <div 
-                            className={`w-full transition-all duration-500 ${activeWeekTooltip === idx ? 'bg-indigo-300' : 'bg-white'}`} 
-                            style={{ height: `${Math.max(h, 5)}%` }}
-                          ></div>
+                        <div className="w-full bg-white/10 rounded-lg overflow-hidden h-full flex items-end">
+                          <motion.div 
+                            initial={{ height: 0 }}
+                            animate={{ height: `${Math.max(h, 8)}%` }}
+                            className={`w-full transition-colors duration-300 ${activeWeekTooltip === idx ? 'bg-indigo-300' : 'bg-white'}`} 
+                          ></motion.div>
                         </div>
-                        <span className={`text-[5px] font-bold transition-opacity ${activeWeekTooltip === idx ? 'opacity-100' : 'opacity-40'}`}>H{idx+1}</span>
+                        <span className={`text-[7px] font-black tracking-widest transition-opacity ${activeWeekTooltip === idx ? 'opacity-100' : 'opacity-50'}`}>H{idx+1}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-50 dark:divide-slate-800">
-            {filteredReceipts.map((r) => (
-              <div key={r.id} onClick={() => onViewReceipt(r)} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition-colors">
-                <div className={`w-1 self-stretch rounded-full ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
-                <div className="flex-1 min-w-0">
-                  <span className="font-bold block truncate uppercase text-[10px] text-slate-800 dark:text-slate-100 leading-tight mb-0.5">{r.vendor}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[8px] font-semibold text-slate-400">{formatDateForDisplay(r.date)}</span>
-                    <span className={`text-[7px] font-bold px-1.5 py-0 rounded-full border uppercase tracking-tighter truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200/50 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+            {filteredReceipts.length > 0 ? (
+              filteredReceipts.map((r) => (
+                <motion.div 
+                  layout
+                  key={r.id} 
+                  onClick={() => onViewReceipt(r)} 
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition-colors group"
+                >
+                  <div className={`w-1.5 h-10 rounded-full shrink-0 ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-black block truncate uppercase text-[11px] text-slate-800 dark:text-slate-100 leading-tight mb-1 tracking-tight group-hover:text-indigo-600 transition-colors">{r.vendor}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-bold text-slate-400 tabular-nums">{formatDateForDisplay(r.date)}</span>
+                      <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                      <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-wider truncate max-w-[100px] ${getCategoryColor(r.category)}`}>{r.category}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col items-end shrink-0 ml-1">
-                  <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 tabular-nums">{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</div>
-                  <button onClick={(e) => { e.stopPropagation(); onDeleteReceipt(r.id); }} className="p-1 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
-                </div>
+                  <div className="flex flex-col items-end shrink-0 ml-2">
+                    <div className="text-sm font-black text-slate-900 dark:text-slate-100 tabular-nums font-display mb-1">{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[10px] ml-0.5 opacity-40">₺</span></div>
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => { e.stopPropagation(); onDeleteReceipt(r.id); }} 
+                      className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-all"
+                    >
+                      <Trash2 size={14} />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="py-12 flex flex-col items-center justify-center text-center px-6">
+                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-full mb-3">
+                   <TrendingDown size={24} className="text-slate-300" />
+                 </div>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bu kategoride harcama yok</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {showTransfer && (
         <div className="fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
 import { ReceiptTable } from './components/ReceiptTable.tsx';
@@ -346,57 +347,127 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800 h-10 flex items-center justify-between px-4">
-            <div className="flex items-center gap-1.5">
-              <div className="bg-indigo-600 rounded-lg text-white font-medium w-[18px] h-[18px] flex items-center justify-center text-[10px]">₺</div>
-              <h1 className="text-[10px] font-black uppercase italic tracking-tighter">Fiş<span className="text-indigo-600">AI</span></h1>
+          <header className="sticky top-0 z-40 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl border-b border-slate-200/40 dark:border-slate-800/50 h-14 flex items-center justify-between px-6">
+            <div className="flex items-center gap-2">
+              <motion.div 
+                whileHover={{ rotate: 15 }}
+                className="bg-indigo-600 rounded-xl text-white font-black w-8 h-8 flex items-center justify-center text-sm shadow-lg shadow-indigo-500/30"
+              >
+                ₺
+              </motion.div>
+              <h1 className="text-sm font-black uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+                Fiş<span className="text-indigo-600">AI</span>
+              </h1>
             </div>
-            <button onClick={() => setShowSettings(true)} className="p-1.5 text-slate-400 hover:text-indigo-600">
-              <SettingsIcon size={16} />
-            </button>
+            <div className="flex items-center gap-2">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowSettings(true)} 
+                className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 dark:bg-slate-900 rounded-xl"
+              >
+                <SettingsIcon size={18} />
+              </motion.button>
+            </div>
           </header>
 
-          <main className="max-w-xl mx-auto px-3 pt-3 space-y-3">
-            {status === AppStatus.PROCESSING && (
-              <div className="bg-indigo-600 rounded-xl p-3 text-white flex items-center justify-center gap-2 shadow-lg animate-pulse">
-                 <Loader2 size={14} className="animate-spin" />
-                 <span className="text-[9px] font-bold uppercase tracking-widest">{statusText}</span>
-              </div>
-            )}
+          <main className="max-w-xl mx-auto px-4 pt-6 space-y-6">
+            <AnimatePresence mode="wait">
+              {status === AppStatus.PROCESSING && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-indigo-600 rounded-3xl p-5 text-white flex flex-col items-center justify-center gap-3 shadow-xl shadow-indigo-600/20"
+                >
+                   <div className="bg-white/20 p-2 rounded-full">
+                     <Loader2 size={24} className="animate-spin" />
+                   </div>
+                   <div className="text-center">
+                     <span className="text-[10px] font-black uppercase tracking-[0.2em] block mb-1 opacity-70">İşlem Yapılıyor</span>
+                     <span className="text-xs font-bold">{statusText}</span>
+                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {activeTab === 'dashboard' && (
-              <div className="space-y-3">
-                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/50 dark:border-slate-800 shadow-sm">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Harcama Toplamı</span>
-                    <select value={dashboardMonth} onChange={e => setDashboardMonth(e.target.value)} className="bg-transparent text-[10px] font-bold dark:text-slate-300 outline-none cursor-pointer">
-                      <option value="Hepsi">Tümü</option>
-                      {availableMonths.map(m => {
-                        const [y, mm] = m.split('-');
-                        const ms = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-                        return <option key={m} value={m}>{`${ms[parseInt(mm) - 1]} ${y}`}</option>;
-                      })}
-                    </select>
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group font-sans">
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform">
+                      <Wallet size={120} />
+                    </div>
+                    
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
+                        <div className="text-4xl font-black tracking-tight tabular-nums flex items-baseline gap-1 font-display">
+                          {activeReceipts
+                            .filter(r => {
+                              if (dashboardMonth === 'Hepsi') return true;
+                              const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
+                              return rMonth === dashboardMonth;
+                            })
+                            .reduce((s, r) => s + r.total, 0)
+                            .toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                          <span className="text-lg font-bold text-slate-300 dark:text-slate-700">₺</span>
+                        </div>
+                      </div>
+                      
+                      <select 
+                        value={dashboardMonth} 
+                        onChange={e => setDashboardMonth(e.target.value)} 
+                        className="bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-full text-[10px] font-bold dark:text-slate-300 border-none outline-none cursor-pointer appearance-none shadow-inner"
+                      >
+                        <option value="Hepsi">Tüm Zamanlar</option>
+                        {availableMonths.map(m => {
+                          const [y, mm] = m.split('-');
+                          const ms = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+                          return <option key={m} value={m}>{`${ms[parseInt(mm) - 1]} ${y}`}</option>;
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
+                        <span className="text-xl font-black font-display">{activeReceipts.length}</span>
+                      </div>
+                      <div className="h-8 w-px bg-slate-100 dark:bg-slate-800"></div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Ortalama</span>
+                        <span className="text-xl font-black font-display">
+                          {(activeReceipts.length > 0 ? activeReceipts.reduce((s, r) => s + r.total, 0) / activeReceipts.length : 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                          <span className="text-xs ml-0.5 opacity-40">₺</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-2xl font-black tracking-tighter tabular-nums flex items-baseline gap-0.5">
-                    {activeReceipts
-                      .filter(r => {
-                        if (dashboardMonth === 'Hepsi') return true;
-                        const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
-                        return rMonth === dashboardMonth;
-                      })
-                      .reduce((s, r) => s + r.total, 0)
-                      .toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                    <span className="text-sm font-bold text-indigo-600">₺</span>
-                  </div>
+
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => fileInputRef.current?.click()} 
+                    disabled={status === AppStatus.PROCESSING} 
+                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-6 rounded-[28px] flex items-center justify-center gap-3 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
+                  >
+                     <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                     <Plus size={24} className="relative z-10" /> 
+                     <span className="text-sm font-black uppercase tracking-widest relative z-10">Fiş Tara</span>
+                  </motion.button>
                 </div>
 
-                <button onClick={() => fileInputRef.current?.click()} disabled={status === AppStatus.PROCESSING} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl flex items-center justify-center gap-2.5 shadow-lg active:scale-95 transition-all">
-                   <Camera size={20} /> <span className="text-[11px] font-bold uppercase tracking-widest">Fiş Tara</span>
-                </button>
-
-                <div className="pt-1">
-                  <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Geçmiş İşlemler</h3>
+                <div className="pt-2">
+                  <div className="flex justify-between items-center mb-4 px-2">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Son İşlemler</h3>
+                    <div className="h-px flex-1 mx-4 bg-slate-100 dark:bg-slate-800"></div>
+                  </div>
+                  
                   <ReceiptTable 
                     receipts={activeReceipts.filter(r => {
                       if (dashboardMonth === 'Hepsi') return true;
@@ -416,7 +487,7 @@ const App: React.FC = () => {
                     viewMode="standard" 
                   />
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {activeTab === 'prices' && <ProductHistory receipts={activeReceipts} />}
@@ -492,16 +563,31 @@ const App: React.FC = () => {
             onCancel={() => setConfirmState(p => ({ ...p, isOpen: false }))} 
           />
 
-          <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t dark:border-slate-800 pb-safe">
-            <div className="max-w-xl mx-auto flex justify-around py-3">
+          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-[32px] shadow-2xl px-2 py-2">
+            <div className="flex justify-between items-center relative">
               {[
                 { id: 'dashboard', label: 'Ana Sayfa', icon: LayoutDashboard },
                 { id: 'prices', label: 'Fiyatlar', icon: TrendingUp },
                 { id: 'budget', label: 'Bütçe', icon: Wallet },
               ].map((item) => (
-                <button key={item.id} onClick={() => setActiveTab(item.id as any)} className={`flex flex-col items-center gap-1 px-6 py-1 ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-400 opacity-50'}`}>
+                <button 
+                  key={item.id} 
+                  onClick={() => setActiveTab(item.id as any)} 
+                  className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-2xl transition-all relative ${
+                    activeTab === item.id 
+                      ? 'text-indigo-600' 
+                      : 'text-slate-400 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  {activeTab === item.id && (
+                    <motion.div 
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl -z-10"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
                   <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-                  <span className="text-[9px] font-bold uppercase tracking-tighter">{item.label}</span>
+                  <span className="text-[9px] font-black uppercase tracking-tighter">{item.label}</span>
                 </button>
               ))}
             </div>
