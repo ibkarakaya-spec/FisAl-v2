@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
@@ -350,12 +350,14 @@ const App: React.FC = () => {
           <header className="sticky top-0 z-40 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl border-b border-slate-200/40 dark:border-slate-800/50 h-14 flex items-center justify-between px-6">
             <div className="flex items-center gap-2">
               <motion.div 
-                whileHover={{ rotate: 15 }}
-                className="bg-indigo-600 rounded-xl text-white font-semibold w-8 h-8 flex items-center justify-center text-sm shadow-lg shadow-indigo-500/30"
+                whileHover={{ rotate: 15, scale: 1.1 }}
+                className="bg-indigo-600 rounded-xl text-white font-semibold w-8 h-8 flex items-center justify-center text-sm shadow-xl shadow-indigo-500/30"
               >
-                ₺
+                <div className="relative">
+                  <ScanText size={18} />
+                </div>
               </motion.div>
-              <h1 className="text-sm font-semibold uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
+              <h1 className="text-sm font-bold uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
                 Fiş<span className="text-indigo-600">AI</span>
               </h1>
             </div>
@@ -364,7 +366,7 @@ const App: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowSettings(true)} 
-                className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 dark:bg-slate-900 rounded-xl"
+                className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 dark:bg-slate-900 rounded-xl transition-all"
               >
                 <SettingsIcon size={18} />
               </motion.button>
@@ -393,10 +395,17 @@ const App: React.FC = () => {
 
             {activeTab === 'dashboard' && (
               <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-1"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-1 pt-1"
               >
+                <div className="flex items-center gap-2 mb-3 px-2">
+                   <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
+                      <ScanText size={14} />
+                   </div>
+                   <h2 className="text-[15px] font-bold text-slate-800 dark:text-white uppercase tracking-tight">Ana Sayfa</h2>
+                </div>
+                
                 <div className="grid grid-cols-1 gap-1">
                   <div className="bg-white dark:bg-slate-900 p-3.5 rounded-[28px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group font-sans">
                     <div className="absolute top-0 right-0 p-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform">
@@ -573,7 +582,7 @@ const App: React.FC = () => {
                 <button 
                   key={item.id} 
                   onClick={() => setActiveTab(item.id as any)} 
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-[18px] transition-all relative ${
+                  className={`flex-1 flex flex-row items-center justify-center gap-2 py-2.5 rounded-[18px] transition-all relative ${
                     activeTab === item.id 
                       ? 'text-indigo-600' 
                       : 'text-slate-400 opacity-60 hover:opacity-100'
@@ -586,8 +595,8 @@ const App: React.FC = () => {
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  <item.icon size={18} strokeWidth={activeTab === item.id ? 2 : 1.5} />
-                  <span className="text-[7.5px] font-semibold uppercase tracking-tight">{item.label}</span>
+                  <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} className="shrink-0" />
+                  <span className="text-[9px] font-bold uppercase tracking-tight leading-none whitespace-nowrap">{item.label}</span>
                 </button>
               ))}
             </div>

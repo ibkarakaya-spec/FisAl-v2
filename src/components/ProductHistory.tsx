@@ -103,76 +103,71 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
       const n = name.toLowerCase().trim();
       
       // Strict exclusions to prevent false positives
-      if (n.includes('deterjan') || n.includes('sabun') || n.includes('şampuan') || n.includes('temizlik') || n.includes('yumuşatıcı') || n.includes('bulaşık')) {
+      if (n.includes('deterjan') || n.includes('sabun') || n.includes('şampuan') || n.includes('temizlik') || n.includes('yumuşatıcı') || n.includes('bulaşık') || n.includes('finish') || n.includes('fairy') || n.includes('ariel') || n.includes('omo') || n.includes('perwoll')) {
         return { main: 'Temizlik ve Bakım', sub: 'Ev ve Kişisel Temizlik' };
       }
 
-      // If it's not a general market category, respect the original broad category
-      if (broadCategory !== 'Gıda ve Market' && broadCategory !== 'Diğer' && broadCategory !== '') {
-        return { main: broadCategory, sub: broadCategory };
-      }
-
-      // Priority Order Logic
-      
-      // 1. İçecekler (Check first to avoid "süt" in "sütlü kahve" confusion if needed, though dairy is also high priority)
-      if (n.includes('su') && !n.includes('sucuk') && !n.includes('susam') && !n.includes('soslu')) return { main: 'İçecekler', sub: 'Su ve Maden Suyu' };
-      if (n.includes('çay') && !n.includes('çaya') && !n.includes('çaydanlık')) {
-        if (n.includes('bitki') || n.includes('meyve çay') || n.includes('yeşil çay') || n.includes('form çay') || n.includes('ihlamur') || n.includes('adaçay')) return { main: 'İçecekler', sub: 'Bitki ve Meyve Çayları' };
+      // 1. İçecekler (High priority keyword check)
+      if (n.includes('su ') || n === 'su' || (n.includes('su') && !n.includes('sucuk') && !n.includes('susam') && !n.includes('soslu') && !n.includes('suda') && !n.includes('börek') && !n.includes('sulu') && !n.includes('suna') && !n.includes('sunu'))) return { main: 'İçecekler', sub: 'Su ve Maden Suyu' };
+      if (n.includes('kola') || n.includes('fanta') || n.includes('gazoz') || n.includes('gazlı') || n.includes('meyve suyu') || n.includes('pepsi') || n.includes('sprite') || n.includes('fusetea') || n.includes('lipton ice') || n.includes('soğuk çay')) return { main: 'İçecekler', sub: 'Meyve Suları ve Gazlı İçecekler' };
+      if (n.includes('çay') && !n.includes('çaya') && !n.includes('çaydanlık') && !n.includes('poğaça')) {
+        if (n.includes('bitki') || n.includes('meyve çay') || n.includes('yeşil çay') || n.includes('form çay') || n.includes('ihlamur') || n.includes('adaçay') || n.includes('kuşburnu') || n.includes('rezene')) return { main: 'İçecekler', sub: 'Bitki ve Meyve Çayları' };
         return { main: 'İçecekler', sub: 'Çay ve Kahve çeşitleri' };
       }
-      if (n.includes('kahve') || n.includes('nescafe') || n.includes('capuccino') || n.includes('espresso')) return { main: 'İçecekler', sub: 'Çay ve Kahve çeşitleri' };
-      if (n.includes('kola') || n.includes('fanta') || n.includes('gazoz') || n.includes('gazlı') || n.includes('meyve suyu') || n.includes('pepsi') || n.includes('sprite') || n.includes('lipton ice')) return { main: 'İçecekler', sub: 'Meyve Suları ve Gazlı İçecekler' };
+      if (n.includes('kahve') || n.includes('nescafe') || n.includes('jacobs') || n.includes('mehmet efendi') || n.includes('filtre kahve') || n.includes('türk kahve')) return { main: 'İçecekler', sub: 'Çay ve Kahve çeşitleri' };
+
+      // 1.5. Temel Gıda ve Bakliyat (Prioritized over snacks for items like sugar/salt)
+      if (n.includes('şeker') && !n.includes('şekerleme') && !n.includes('sakız') && !n.includes('jelibon')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Toz Şeker, Küp Şeker ve Tatlandırıcılar' };
+      if (n.includes('tuz') && !n.includes('tuzlu fıstık') && !n.includes('tuzlu fındık')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Yemeklik Tuz ve Baharatlar' };
+      if (n.includes('un') && !n.includes('sabun') && !n.includes('unlu mamül')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Un, İrmik ve Nişasta' };
+      if (n.includes('makarna') || n.includes('mantı') || n.includes('spagetti') || n.includes('noodle')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Makarna ve Mantı çeşitleri' };
+      if (n.includes('pirinç') || n.includes('bulgur') || n.includes('mercimek') || n.includes('nohut') || n.includes('fasulye') || n.includes('bakliyat') || n.includes('barbunya')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Pirinç, Bulgur ve Bakliyat çeşitleri' };
+      if (n.includes('irmik') || n.includes('nişasta')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Un, İrmik ve Nişasta' };
+      if (n.includes('baharat') || n.includes('karabiber') || n.includes('nane') || n.includes('kekik') || n.includes('pul biber')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Yemeklik Tuz ve Baharatlar' };
+      if (n.includes('salça') || n.includes('konserve') || n.includes('turşu') || n.includes('mısır') || n.includes('bezelye') || n.includes('yaprak') || n.includes('tat') || n.includes('tukaş')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Salça ve Konserve sebzeler' };
 
       // 2. Süt ve Kahvaltılık
       if (n.includes('yumurta')) return { main: 'Süt ve Kahvaltılık', sub: 'Yumurta' };
-      if (n.includes('peynir') || n.includes('kaşar') || n.includes('lor') || n.includes('tulum') || n.includes('beyaz peynir') || n.includes('çökelek') || n.includes('labne')) return { main: 'Süt ve Kahvaltılık', sub: 'Peynir çeşitleri (Beyaz, Kaşar, Lor vb.)' };
-      if (n.includes('yoğurt') || n.includes('ayran') || n.includes('kefir')) return { main: 'Süt ve Kahvaltılık', sub: 'Yoğurt ve Ayran' };
+      if (n.includes('peynir') || n.includes('kaşar') || n.includes('lor') || n.includes('tulum') || n.includes('beyaz peynir') || n.includes('süzme') || n.includes('labne') || n.includes('hellim')) return { main: 'Süt ve Kahvaltılık', sub: 'Peynir çeşitleri (Beyaz, Kaşar, Lor vb.)' };
+      if (n.includes('yoğurt') || n.includes('ayran') || n.includes('kefir') || n.includes('kaymak') || n.includes('krema')) return { main: 'Süt ve Kahvaltılık', sub: 'Yoğurt ve Ayran' };
       if (n.includes('süt') && !n.includes('sütlü')) return { main: 'Süt ve Kahvaltılık', sub: 'Süt ve Aromalı Sütler' };
       if (n.includes('zeytin')) return { main: 'Süt ve Kahvaltılık', sub: 'Zeytin (Siyah ve Yeşil)' };
-      if (n.includes('tereyağ') || n.includes('margarin')) return { main: 'Süt ve Kahvaltılık', sub: 'Tereyağı ve Margarin' };
+      if (n.includes('tereyağ') || n.includes('margarin') || n.includes('becel') || n.includes('teremyağ')) return { main: 'Süt ve Kahvaltılık', sub: 'Tereyağı ve Margarin' };
       if (n.includes('bal') || n.includes('reçel') || n.includes('pekmez') || n.includes('tahin') || n.includes('helva')) return { main: 'Süt ve Kahvaltılık', sub: 'Reçel, Bal, Pekmez ve Helva' };
-      if (n.includes('sürme çikolata') || n.includes('nutella') || n.includes('sarelle') || n.includes('ezme')) return { main: 'Süt ve Kahvaltılık', sub: 'Sürme çikolata ve Ezmeler' };
+      if (n.includes('sürme çikolata') || n.includes('nutella') || n.includes('sarelle') || n.includes('çokokrem') || n.includes('fındık ezmesi')) return { main: 'Süt ve Kahvaltılık', sub: 'Sürme çikolata ve Ezmeler' };
 
       // 3. Et, Tavuk ve Balık
-      if (n.includes('sucuk') || n.includes('salam') || n.includes('sosis') || n.includes('pastırma') || n.includes('şarküteri') || n.includes('füme')) return { main: 'Et, Tavuk ve Balık', sub: 'Şarküteri (Sucuk, Salam, Sosis, Pastırma)' };
-      if (n.includes('tavuk') || n.includes('hindi') || n.includes('baget') || n.includes('kanat') || n.includes('rosto') || n.includes('fileto')) return { main: 'Et, Tavuk ve Balık', sub: 'Tavuk ve Hindi eti' };
-      if (n.includes('balık') || n.includes('deniz mahsul') || n.includes('ton balığı') || n.includes('karides') || n.includes('mezgit') || n.includes('levrek')) return { main: 'Et, Tavuk ve Balık', sub: 'Balık ve Deniz mahsulleri' };
-      if (n.includes('et') || n.includes('kıyma') || n.includes('kuşbaşı') || n.includes('dana') || n.includes('kuzu') || n.includes('pirzola') || n.includes('bonfile')) return { main: 'Et, Tavuk ve Balık', sub: 'Dana ve Kuzu eti products' };
+      if (n.includes('sucuk') || n.includes('salam') || n.includes('sosis') || n.includes('pastırma') || n.includes('şarküteri') || n.includes('füme') || n.includes('kavurma')) return { main: 'Et, Tavuk ve Balık', sub: 'Şarküteri (Sucuk, Salam, Sosis, Pastırma)' };
+      if (n.includes('tavuk') || n.includes('hindi') || n.includes('baget') || n.includes('kanat') || n.includes('but') || n.includes('fileto')) return { main: 'Et, Tavuk ve Balık', sub: 'Tavuk ve Hindi eti' };
+      if (n.includes('balık') || n.includes('deniz mahsul') || n.includes('ton balığı') || n.includes('karides') || n.includes('dardanel') || n.includes('mezgit') || n.includes('levrek')) return { main: 'Et, Tavuk ve Balık', sub: 'Balık ve Deniz mahsulleri' };
+      if (n.includes('et') || n.includes('kıyma') || n.includes('kuşbaşı') || n.includes('dana') || n.includes('kuzu') || n.includes('bonfile') || n.includes('antrikot')) return { main: 'Et, Tavuk ve Balık', sub: 'Dana ve Kuzu eti ürünleri' };
 
       // 4. Meyve ve Sebze
-      if (n.includes('domates') || n.includes('patates') || n.includes('soğan') || n.includes('biber') || n.includes('salatalık') || n.includes('sarısak') || n.includes('patlıcan') || n.includes('kabak') || n.includes('marul') || n.includes('maydanoz')) return { main: 'Meyve ve Sebze', sub: 'Taze Sebzeler' };
-      if (n.includes('elma') || n.includes('muz') || n.includes('portakal') || n.includes('mandalina') || n.includes('limon') || n.includes('çilek') || n.includes('karpuz') || n.includes('kavun') || n.includes('üzüm')) return { main: 'Meyve ve Sebze', sub: 'Taze Meyveler' };
-      if (n.includes('kuruyemiş') || n.includes('fındık') || n.includes('fıstık') || n.includes('ceviz') || n.includes('badem') || n.includes('leblebi') || n.includes('kuru üzüm') || n.includes('kuru kayısı')) return { main: 'Meyve ve Sebze', sub: 'Kuru Meyve ve Kuruyemişler' };
-
-      // 5. Temel Gıda ve Bakliyat
-      if (n.includes('pirinç') || n.includes('bulgur') || n.includes('mercimek') || n.includes('nohut') || n.includes('fasulye') || n.includes('bakliyat') || n.includes('barbunya')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Pirinç, Bulgur ve Bakliyat çeşitleri' };
-      if (n.includes('un') || n.includes('irmik') || n.includes('nişasta')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Un, İrmik ve Nişasta' };
-      if (n.includes('makarna') || n.includes('mantı') || n.includes('spagetti')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Makarna ve Mantı çeşitleri' };
-      if (n.includes('şeker') || n.includes('tatlandırıcı')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Toz Şeker, Küp Şeker ve Tatlandırıcılar' };
-      if (n.includes('tuz') || n.includes('baharat') || n.includes('karabiber') || n.includes('nane') || n.includes('kekik') || n.includes('isot')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Yemeklik Tuz ve Baharatlar' };
-      if (n.includes('salça') || n.includes('konserve') || n.includes('turşu') || n.includes('bezelye') || n.includes('mısır') || n.includes('yaprak')) return { main: 'Temel Gıda ve Bakliyat', sub: 'Salça ve Konserve sebzeler' };
-
-      // 6. Yağlar
-      if (n.includes('zeytinyağı') || n.includes('sızma') || n.includes('riviera')) return { main: 'Yağlar', sub: 'Zeytinyağı (Sızma ve Riviera)' };
+      if (n.includes('domates') || n.includes('patates') || n.includes('soğan') || n.includes('biber') || n.includes('salatalık') || n.includes('sarısak') || n.includes('patlıcan') || n.includes('kabak') || n.includes('marul') || n.includes('maydanoz') || n.includes('sebze')) return { main: 'Meyve ve Sebze', sub: 'Taze Sebzeler' };
+      if (n.includes('elma') || n.includes('muz') || n.includes('portakal') || n.includes('mandalina') || n.includes('limon') || n.includes('çilek') || n.includes('karpuz') || n.includes('kavun') || n.includes('üzüm') || n.includes('meyve')) return { main: 'Meyve ve Sebze', sub: 'Taze Meyveler' };
+      if (n.includes('kuruyemiş') || n.includes('fındık') || n.includes('fıstık') || n.includes('ceviz') || n.includes('badem') || n.includes('leblebi') || n.includes('üzüm') || n.includes('kayısı') || n.includes('incir')) return { main: 'Meyve ve Sebze', sub: 'Kuru Meyve ve Kuruyemişler' };
+      if (n.includes('zeytinyağı') || n.includes('sızma') || n.includes('riviera') || n.includes('komili') || n.includes('yudum')) return { main: 'Yağlar', sub: 'Zeytinyağı (Sızma ve Riviera)' };
       if (n.includes('ayçiçek')) return { main: 'Yağlar', sub: 'Ayçiçek Yağı' };
       if (n.includes('mısırözü') || n.includes('kanola')) return { main: 'Yağlar', sub: 'Mısırözü ve Kanola Yağı' };
 
       // 7. Atıştırmalıklar
-      if (n.includes('çikolata') || n.includes('gofret') || n.includes('tadelle') || n.includes('ülker') || n.includes('eti')) {
-        if (n.includes('bisküvi') || n.includes('kek')) return { main: 'Atıştırmalıklar', sub: 'Bisküvi ve Kekler' };
-        return { main: 'Atıştırmalıklar', sub: 'Çikolata ve Gofretler' };
-      }
-      if (n.includes('bisküvi') || n.includes('kek') || n.includes('kurabiye') || n.includes('pötibör')) return { main: 'Atıştırmalıklar', sub: 'Bisküvi ve Kekler' };
-      if (n.includes('cips') || n.includes('lays') || n.includes('doritos') || n.includes('ruffles') || n.includes('pringles')) return { main: 'Atıştırmalıklar', sub: 'Cips ve Kuruyemiş Paketleri' };
-      if (n.includes('şeker') || n.includes('sakız') || n.includes('bonbon') || n.includes('yumuşak şeker') || n.includes('jelibon')) return { main: 'Atıştırmalıklar', sub: 'Şekerleme ve Sakızlar' };
+      if (n.includes('bisküvi') || n.includes('kek') || n.includes('kurabiye') || n.includes('pötibör') || n.includes('negro') || n.includes('probis')) return { main: 'Atıştırmalıklar', sub: 'Bisküvi ve Kekler' };
+      if (n.includes('çikolata') || n.includes('gofret') || n.includes('ülker') || n.includes('eti') || n.includes('milka') || n.includes('snickers')) return { main: 'Atıştırmalıklar', sub: 'Çikolata ve Gofretler' };
+      if (n.includes('cips') || n.includes('lays') || n.includes('doritos') || n.includes('ruffles') || n.includes('patos')) return { main: 'Atıştırmalıklar', sub: 'Cips ve Kuruyemiş Paketleri' };
+      if (n.includes('şekerleme') || n.includes('sakız') || n.includes('bonbon') || n.includes('jelibon') || n.includes('haribo') || n.includes('falım')) return { main: 'Atıştırmalıklar', sub: 'Şekerleme ve Sakızlar' };
 
       // 8. Dondurulmuş ve Hazır Gıda
-      if (n.includes('dondurulmuş') || n.includes('donuk')) return { main: 'Dondurulmuş ve Hazır Gıda', sub: 'Dondurulmuş Sebze ve Meyveler' };
-      if (n.includes('pizza') || n.includes('börek') || n.includes('milföy') || n.includes('hamburger')) return { main: 'Dondurulmuş ve Hazır Gıda', sub: 'Dondurulmuş Pizza, Börek ve Milföy' };
-      if (n.includes('çorba') || n.includes('hazır yemek') || n.includes('çabuk') || n.includes('noodle')) return { main: 'Dondurulmuş ve Hazır Gıda', sub: 'Hazır Çorbalar ve Çabuk Makarnalar' };
+      if (n.includes('pizza') || n.includes('börek') || n.includes('milföy') || n.includes('patates kızartması') || n.includes('hamburger')) return { main: 'Dondurulmuş ve Hazır Gıda', sub: 'Dondurulmuş Pizza, Börek ve Milföy' };
+      if (n.includes('dondurulmuş') || n.includes('superfresh') || n.includes('feast')) return { main: 'Dondurulmuş ve Hazır Gıda', sub: 'Dondurulmuş Sebze ve Meyveler' };
+      if (n.includes('çorba') || n.includes('hazır yemek') || n.includes('knorr') || n.includes('maggi') || n.includes('indomie')) return { main: 'Dondurulmuş ve Hazır Gıda', sub: 'Hazır Çorbalar ve Çabuk Makarnalar' };
 
-      // 9. Unlu Mamüller (Fallback if not caught by breakfast/snacks)
-      if (n.includes('ekmek') || n.includes('simit') || n.includes('poğaça') || n.includes('yufka') || n.includes('lavaş')) return { main: 'Ekmek ve Unlu Mamüller', sub: 'Ekmek ve Unlu Mamüller' };
+      // 9. Ekmek ve Unlu Mamüller
+      if (n.includes('ekmek') || n.includes('simit') || n.includes('poğaça') || n.includes('yufka') || n.includes('lavaş') || n.includes('bazlama')) return { main: 'Ekmek ve Unlu Mamüller', sub: 'Ekmek ve Unlu Mamüller' };
+
+      // Default to broad category if "Gıda ve Market" is not matched
+      if (broadCategory !== 'Gıda ve Market' && broadCategory !== 'Diğer' && broadCategory !== '') {
+        return { main: broadCategory, sub: broadCategory };
+      }
 
       return { main: 'Diğer', sub: 'Diğer Ürünler' };
     };
@@ -254,16 +249,16 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
   };
 
   const categoryImages: Record<string, string> = {
-    'Temel Gıda ve Bakliyat': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=800&auto=format&fit=crop',
-    'Süt ve Kahvaltılık': 'https://images.unsplash.com/photo-1550583724-125581cc25fb?q=80&w=800&auto=format&fit=crop',
-    'Et, Tavuk ve Balık': 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800&auto=format&fit=crop',
-    'Meyve ve Sebze': 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop',
-    'Yağlar': 'https://images.unsplash.com/photo-1474979266404-7eaacbad7391?q=80&w=800&auto=format&fit=crop',
-    'Atıştırmalıklar': 'https://images.unsplash.com/photo-1590080875515-8a3a8dc3605e?q=80&w=800&auto=format&fit=crop',
-    'İçecekler': 'https://images.unsplash.com/photo-1544145945-f904253d0c7e?q=80&w=800&auto=format&fit=crop',
-    'Dondurulmuş ve Hazır Gıda': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop',
-    'Ekmek ve Unlu Mamüller': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=800&auto=format&fit=crop',
-    'Temizlik ve Bakım': 'https://images.unsplash.com/photo-1584622781564-1d9876a13d00?q=80&w=800&auto=format&fit=crop',
+    'Temel Gıda ve Bakliyat': 'https://images.unsplash.com/photo-1590333746438-9993c3707178?q=80&w=800&auto=format&fit=crop', // Rice/Grains
+    'Süt ve Kahvaltılık': 'https://images.unsplash.com/photo-1550583724-125581cc25fb?q=80&w=800&auto=format&fit=crop', // Milk
+    'Et, Tavuk ve Balık': 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800&auto=format&fit=crop', // Meat
+    'Meyve ve Sebze': 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop', // Vegetables
+    'Yağlar': 'https://images.unsplash.com/photo-1474979266404-7eaacbad7391?q=80&w=800&auto=format&fit=crop', // Olive oil
+    'Atıştırmalıklar': 'https://images.unsplash.com/photo-1590080875515-8a3a8dc3605e?q=80&w=800&auto=format&fit=crop', // Snacks
+    'İçecekler': 'https://images.unsplash.com/photo-1544145945-f904253d0c7e?q=80&w=800&auto=format&fit=crop', // Drinks
+    'Dondurulmuş ve Hazır Gıda': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop', // Pizza/Ready
+    'Ekmek ve Unlu Mamüller': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=800&auto=format&fit=crop', // Bread
+    'Temizlik ve Bakım': 'https://images.unsplash.com/photo-1584622781564-1d9876a13d00?q=80&w=800&auto=format&fit=crop', // Soap
     'Diğer': 'https://images.unsplash.com/photo-1534452203294-49c891ca7ee1?q=80&w=800&auto=format&fit=crop'
   };
 
@@ -357,10 +352,13 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                     <img 
                       src={categoryImages[productData[catName].main] || categoryImages['Diğer']} 
                       alt={catName} 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = categoryImages['Diğer'];
+                      }}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     {!expandedCategories[catName] && (
-                      <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[1px]"></div>
+                      <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-[0.5px]"></div>
                     )}
                   </div>
                   <div>
