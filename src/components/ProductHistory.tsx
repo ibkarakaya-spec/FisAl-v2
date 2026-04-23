@@ -397,15 +397,15 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight uppercase tracking-tight font-display mb-0.5">{prod.name}</h4>
+                        <h4 className="text-[15px] font-bold text-slate-950 dark:text-white truncate leading-tight uppercase tracking-tight font-display mb-0.5">{prod.name}</h4>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                            <History size={10} className="opacity-50" />
-                            {prod.purchases.length}
+                          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                            <History size={10} className="opacity-60" />
+                            {prod.purchases.length} ALIM
                           </span>
-                          <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-                          <span className="text-[9px] font-semibold text-emerald-500 uppercase tracking-widest flex items-center gap-1">
-                             <TrendingDown size={10} className="opacity-50" />
+                          <div className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                             <TrendingDown size={10} className="opacity-60" />
                              Min: {prod.minPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
                           </span>
                         </div>

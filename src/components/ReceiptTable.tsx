@@ -139,7 +139,7 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 truncate uppercase tracking-tight font-display leading-none">
+              <span className="text-[13px] font-bold text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-none">
                 {r.vendor}
               </span>
               {r.imageUrl && (

@@ -132,16 +132,16 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div className="space-y-0.5">
-                    <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest ml-1">İşletme Adı</label>
-                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all shadow-inner" value={editData.vendor} onChange={e => setEditData({...editData, vendor: e.target.value})} />
+                    <label className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest ml-1">İşletme Adı</label>
+                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl font-bold text-xs text-slate-900 dark:text-white outline-none focus:ring-4 ring-indigo-500/5 transition-all shadow-inner uppercase" value={editData.vendor} onChange={e => setEditData({...editData, vendor: e.target.value})} />
                   </div>
                   <div className="space-y-0.5">
-                    <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest ml-1">İşlem Tarihi</label>
-                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all tabular-nums shadow-inner" value={editData.date} onChange={e => setEditData({...editData, date: e.target.value})} />
+                    <label className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest ml-1">İşlem Tarihi</label>
+                    <input className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl font-bold text-xs text-slate-900 dark:text-white outline-none focus:ring-4 ring-indigo-500/5 transition-all tabular-nums shadow-inner" value={editData.date} onChange={e => setEditData({...editData, date: e.target.value})} />
                   </div>
                   <div className="col-span-1 md:col-span-2 space-y-0.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
-                    <select className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold text-xs outline-none focus:ring-4 ring-indigo-500/5 dark:text-white transition-all cursor-pointer appearance-none shadow-inner" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})}>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Kategori</label>
+                    <select className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl font-bold text-xs text-slate-900 dark:text-white outline-none focus:ring-4 ring-indigo-500/5 transition-all cursor-pointer appearance-none shadow-inner" value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})}>
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
@@ -175,35 +175,35 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                         className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-[24px] border border-slate-100 dark:border-slate-800 flex gap-3.5 items-center group/item hover:border-indigo-200 transition-colors"
                       >
                         <div className="flex-1 space-y-1">
-                           <label className="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ürün Adı</label>
+                           <label className="text-[8px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ürün Adı</label>
                            <input 
-                             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-4 py-2 rounded-xl text-[11px] font-bold text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 uppercase placeholder:text-slate-300" 
-                             placeholder="Ürün Adı Giriniz"
+                             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2.5 rounded-xl text-[11px] font-bold text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 uppercase placeholder:text-slate-400" 
+                             placeholder="Ürün Adı Yazınız..."
                              value={item.name} 
                              onChange={e => handleItemChange(idx, 'name', e.target.value)} 
                            />
                         </div>
                         <div className="w-20 space-y-1">
-                           <label className="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1">Miktar</label>
+                           <label className="text-[8px] font-bold text-slate-500 uppercase tracking-widest ml-1">Miktar</label>
                            <input 
                              type="number" 
                              step="any"
-                             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-4 py-2 rounded-xl text-[11px] font-black text-center text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
+                             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2.5 rounded-xl text-[11px] font-black text-center text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
                              value={item.quantity} 
                              onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} 
                            />
                         </div>
                         <div className="w-28 space-y-1">
-                           <label className="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fiyat</label>
+                           <label className="text-[8px] font-bold text-slate-500 uppercase tracking-widest ml-1">Fiyat</label>
                            <div className="relative">
                               <input 
                                 type="number" 
                                 step="any"
-                                className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-4 py-2 pl-6 rounded-xl text-[11px] font-bold text-right text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
+                                className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2.5 pl-7 rounded-xl text-[11px] font-bold text-right text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
                                 value={item.price} 
                                 onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} 
                               />
-                              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 font-bold text-[10px]">₺</div>
+                              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 font-bold text-[10px]">₺</div>
                            </div>
                         </div>
                         <motion.button 
