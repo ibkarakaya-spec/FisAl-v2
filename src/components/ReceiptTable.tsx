@@ -58,10 +58,10 @@ const LogoIcon: React.FC<{ vendor: string, category: string }> = ({ vendor, cate
   const [error, setError] = React.useState(false);
 
   return (
-    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative bg-white dark:bg-slate-800`}>
+    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative bg-white dark:bg-slate-800`}>
       {/* Base Layer: Company Logo Fallback */}
       <div className="absolute inset-0 flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600">
-        <ScanText size={18} />
+        <ScanText size={12} />
       </div>
 
       {/* Top Layer: Vendor Logo Image */}
@@ -70,7 +70,7 @@ const LogoIcon: React.FC<{ vendor: string, category: string }> = ({ vendor, cate
           src={logoUrl} 
           alt={vendor}
           onError={() => setError(true)}
-          className="absolute inset-0 w-full h-full object-contain p-1.5 bg-white dark:bg-slate-900 transition-opacity duration-300"
+          className="absolute inset-0 w-full h-full object-contain p-1 bg-white dark:bg-slate-900 transition-opacity duration-300"
         />
       )}
     </div>
@@ -133,43 +133,42 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
           whileHover={{ scale: 1.01, x: 2 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => onView(r)} 
-          className="group bg-white dark:bg-slate-900 rounded-[20px] border border-slate-200/50 dark:border-slate-800/60 p-1.5 flex items-center gap-2 transition-all hover:border-indigo-200 dark:hover:border-indigo-900/50 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none cursor-pointer"
+          className="group bg-white dark:bg-slate-950/50 rounded-xl border border-slate-100 dark:border-slate-900 p-1 flex items-center gap-2 transition-all hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer mb-0.5"
         >
           <LogoIcon vendor={r.vendor} category={r.category} />
           
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[13px] font-bold text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-none">
-                {r.vendor}
-              </span>
-              {r.imageUrl && (
-                <div className="p-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500">
-                  <ImageIcon size={8} />
-                </div>
-              )}
+          <div className="flex-1 min-w-0 flex items-center justify-between gap-1 pr-1">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                <span className="text-[11px] font-bold text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-tight">
+                  {r.vendor}
+                </span>
+                {r.imageUrl && (
+                  <div className="p-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500 shrink-0">
+                    <ImageIcon size={7} />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1 opacity-70">
+                <span className="text-[7px] font-bold text-slate-500 tabular-nums shrink-0">{formatDateForDisplay(r.date)}</span>
+                <span className={`text-[6px] font-black px-1 rounded-sm border uppercase tracking-wider truncate inline-block ${getCategoryColor(r.category)}`}>
+                  {r.category.split(' ')[0]}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[8px] font-medium text-slate-400 shrink-0 tabular-nums">{formatDateForDisplay(r.date)}</span>
-              <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-              <span className={`text-[7px] font-bold px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[100px] ${getCategoryColor(r.category)}`}>
-                {r.category}
-              </span>
+            
+            <div className="text-[12px] font-black text-slate-950 dark:text-white tabular-nums font-display shrink-0 ml-1">
+              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[8px] text-indigo-500">₺</span>
             </div>
           </div>
           
-          <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
-            <div className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums font-display">
-              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[9px] font-semibold text-indigo-500">₺</span>
-            </div>
-            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button 
-                onClick={(e) => { e.stopPropagation(); onDelete(r.id); }} 
-                className="p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-slate-50 dark:bg-slate-800 rounded-md transition-colors"
-              >
-                <Trash2 size={12} />
-              </button>
-              <ChevronRight size={14} className="text-slate-300" />
-            </div>
+          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity pr-1">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(r.id); }} 
+              className="p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400"
+            >
+              <Trash2 size={10} />
+            </button>
           </div>
         </motion.div>
       ))}

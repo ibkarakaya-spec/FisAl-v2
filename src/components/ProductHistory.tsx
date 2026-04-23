@@ -388,38 +388,34 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                         <motion.div 
                           key={idx} 
                           layout
-                          whileHover={{ scale: 1.01 }}
-                          className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/50 dark:border-slate-800 overflow-hidden shadow-sm transition-all group"
+                          whileHover={{ bg: 'rgb(248, 250, 252)' }}
+                          className="bg-white dark:bg-slate-950/50 rounded-xl border border-slate-100 dark:border-slate-900 overflow-hidden transition-all group mb-0.5"
                         >
-                    <div className="p-4 flex items-center gap-3.5">
-                      <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-[18px] flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                    <div className="p-2 flex items-center gap-2.5">
+                      <div className="w-8 h-8 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center justify-center text-lg shrink-0">
                         {getEmoji(prod.name)}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-[15px] font-bold text-slate-950 dark:text-white truncate leading-tight uppercase tracking-tight font-display mb-0.5">{prod.name}</h4>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                            <History size={10} className="opacity-60" />
-                            {prod.purchases.length} ALIM
+                        <h4 className="text-[12px] font-bold text-slate-950 dark:text-white truncate uppercase tracking-tight font-display mb-0">{prod.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-0.5">
+                            <History size={8} /> {prod.purchases.length}
                           </span>
-                          <div className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
-                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                             <TrendingDown size={10} className="opacity-60" />
-                             Min: {prod.minPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
+                          <span className="text-[7px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-0.5">
+                             <TrendingDown size={8} /> {prod.minPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
                           </span>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <div className="text-lg font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-display leading-none">
-                          {prod.lastPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-[10px] font-semibold text-indigo-500">₺</span>
+                        <div className="text-[12px] font-black text-slate-950 dark:text-white tabular-nums font-display leading-none">
+                          {prod.lastPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-[8px] text-indigo-500">₺</span>
                         </div>
-                        <div className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest mt-1">Son</div>
                       </div>
                     </div>
 
-                    <div className="bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 px-4 py-1.5 divide-y divide-slate-50 dark:divide-slate-800">
+                    <div className="bg-slate-50/30 dark:bg-slate-900/40 px-2 py-0.5 divide-y divide-slate-100 dark:divide-slate-900">
                       {prod.purchases.sort((a, b) => {
                         const parse = (d: string) => {
                           if (d.includes('.')) {
@@ -430,14 +426,12 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                         };
                         return parse(b.date).localeCompare(parse(a.date));
                       }).slice(0, 3).map((pur, pidx) => (
-                        <div key={pidx} className="py-1.5 flex items-center justify-between text-[10px] transition-colors -mx-1 px-1 rounded-lg">
-                          <div className="flex flex-col min-w-0 flex-1">
-                             <div className="flex items-center gap-1.5 overflow-hidden">
-                                <span className="font-bold text-slate-700 dark:text-slate-200 uppercase truncate text-[9px]">{pur.vendor}</span>
-                                <span className="text-[8px] text-slate-400 font-bold tabular-nums shrink-0">{pur.date.substring(0, 5)}</span>
-                             </div>
+                        <div key={pidx} className="py-0.5 flex items-center justify-between text-[8px] transition-colors">
+                          <div className="flex flex-1 items-center gap-2 overflow-hidden">
+                             <span className="font-bold text-slate-600 dark:text-slate-400 uppercase truncate">{pur.vendor}</span>
+                             <span className="text-[7px] text-slate-400 tabular-nums shrink-0">{pur.date.substring(0, 5)}</span>
                           </div>
-                          <div className="font-bold text-slate-600 dark:text-slate-400 tabular-nums ml-2">
+                          <div className="font-bold text-slate-700 dark:text-slate-300 tabular-nums ml-2">
                              {pur.unitPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
                           </div>
                         </div>

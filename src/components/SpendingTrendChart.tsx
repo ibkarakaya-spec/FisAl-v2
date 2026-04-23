@@ -53,7 +53,7 @@ export const SpendingTrendChart: React.FC<Props> = ({ receipts, selectedMonth })
   const isAll = selectedMonth === 'Hepsi';
 
   return (
-    <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 flex flex-col h-40 transition-colors">
+    <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl shadow-sm border border-slate-200/50 dark:border-slate-800 flex flex-col h-28 transition-colors">
       <div className="flex items-center justify-between mb-1">
          <div className="flex items-center gap-1.5">
             <div className="bg-indigo-50 dark:bg-indigo-950/30 p-1 rounded-lg text-indigo-600">

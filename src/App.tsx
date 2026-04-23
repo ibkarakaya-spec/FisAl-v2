@@ -339,7 +339,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 transition-colors">
+    <div className="min-h-screen pb-16 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 transition-colors">
       {isInitializing ? (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex flex-col items-center justify-center">
           <Loader2 className="animate-spin text-indigo-600 mb-4" size={32} />
@@ -407,15 +407,15 @@ const App: React.FC = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 gap-1">
-                  <div className="bg-white dark:bg-slate-900 p-3.5 rounded-[28px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group font-sans">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group font-sans">
                     <div className="absolute top-0 right-0 p-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform">
-                      <Wallet size={100} />
+                      <Wallet size={80} />
                     </div>
                     
-                    <div className="flex justify-between items-start mb-1.5">
+                    <div className="flex justify-between items-start mb-1">
                       <div className="space-y-0.5">
                         <span className="text-[9px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
-                        <div className="text-3xl font-semibold tracking-tight tabular-nums flex items-baseline gap-1 font-display">
+                        <div className="text-2xl font-semibold tracking-tight tabular-nums flex items-baseline gap-1 font-display">
                           {activeReceipts
                             .filter(r => {
                               if (dashboardMonth === 'Hepsi') return true;
@@ -432,7 +432,7 @@ const App: React.FC = () => {
                         <select 
                           value={dashboardMonth} 
                           onChange={e => setDashboardMonth(e.target.value)} 
-                          className="bg-indigo-50 dark:bg-slate-800 px-4 py-2 pr-9 rounded-2xl text-[11px] font-bold text-indigo-700 dark:text-slate-200 border-none outline-none cursor-pointer appearance-none shadow-sm group-hover:bg-indigo-100 dark:group-hover:bg-slate-700 transition-all active:scale-95"
+                          className="bg-indigo-50 dark:bg-slate-800 px-3 py-1.5 pr-8 rounded-xl text-[10px] font-bold text-indigo-700 dark:text-slate-200 border-none outline-none cursor-pointer appearance-none shadow-sm group-hover:bg-indigo-100 dark:group-hover:bg-slate-700 transition-all active:scale-95"
                         >
                           <option value="Hepsi">Tüm Zamanlar</option>
                           {availableMonths.map(m => {
@@ -441,8 +441,8 @@ const App: React.FC = () => {
                             return <option key={m} value={m}>{`${ms[parseInt(mm) - 1]} ${y}`}</option>;
                           })}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 group-hover:text-indigo-600 transition-colors">
-                           <ChevronDown size={14} />
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 group-hover:text-indigo-600 transition-colors">
+                           <ChevronDown size={12} />
                         </div>
                       </div>
                     </div>
@@ -450,14 +450,14 @@ const App: React.FC = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col">
                         <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
-                        <span className="text-lg font-semibold font-display">{activeReceipts.length}</span>
+                        <span className="text-base font-semibold font-display">{activeReceipts.length}</span>
                       </div>
                       <div className="h-6 w-px bg-slate-100 dark:bg-slate-800"></div>
                       <div className="flex flex-col">
                         <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Ortalama</span>
-                        <span className="text-lg font-semibold font-display">
+                        <span className="text-base font-semibold font-display">
                           {(activeReceipts.length > 0 ? activeReceipts.reduce((s, r) => s + r.total, 0) / activeReceipts.length : 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
-                          <span className="text-xs ml-0.5 opacity-40">₺</span>
+                          <span className="text-[10px] ml-0.5 opacity-40">₺</span>
                         </span>
                       </div>
                     </div>
@@ -468,16 +468,16 @@ const App: React.FC = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => fileInputRef.current?.click()} 
                     disabled={status === AppStatus.PROCESSING} 
-                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 rounded-[24px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
+                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
                   >
                      <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                     <Plus size={20} className="relative z-10" /> 
-                     <span className="text-xs font-semibold uppercase tracking-widest relative z-10">Fiş Tara</span>
+                     <Plus size={18} className="relative z-10" /> 
+                     <span className="text-[11px] font-semibold uppercase tracking-widest relative z-10">Fiş Tara</span>
                   </motion.button>
                 </div>
 
                 <div className="pt-2">
-                  <div className="flex justify-between items-center mb-4 px-2">
+                  <div className="flex justify-between items-center mb-2 px-2">
                     <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em]">Son İşlemler</h3>
                         <div className="h-px flex-1 mx-4 bg-slate-100 dark:bg-slate-800"></div>
                       </div>
@@ -577,8 +577,8 @@ const App: React.FC = () => {
             onCancel={() => setConfirmState(p => ({ ...p, isOpen: false }))} 
           />
 
-          <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-[280px] z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-[24px] shadow-2xl px-1 py-1">
-            <div className="flex justify-between items-center relative gap-1">
+          <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 w-fit min-w-[200px] z-40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-3xl border border-slate-200/40 dark:border-slate-800/50 rounded-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.3)] px-1 py-1">
+            <div className="flex justify-between items-center relative gap-0.5">
               {[
                 { id: 'dashboard', label: 'Ana Sayfa', icon: LayoutDashboard },
                 { id: 'prices', label: 'Fiyatlar', icon: TrendingUp },
@@ -587,7 +587,7 @@ const App: React.FC = () => {
                 <button 
                   key={item.id} 
                   onClick={() => setActiveTab(item.id as any)} 
-                  className={`flex-1 flex flex-row items-center justify-center gap-2 py-2.5 rounded-[18px] transition-all relative ${
+                  className={`flex-1 flex flex-row items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl transition-all relative ${
                     activeTab === item.id 
                       ? 'text-indigo-600' 
                       : 'text-slate-400 opacity-60 hover:opacity-100'
@@ -596,12 +596,14 @@ const App: React.FC = () => {
                   {activeTab === item.id && (
                     <motion.div 
                       layoutId="activeTab"
-                      className="absolute inset-0 bg-indigo-50 dark:bg-indigo-950/30 rounded-[18px] -z-10"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      className="absolute inset-0 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl -z-10"
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                     />
                   )}
-                  <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} className="shrink-0" />
-                  <span className="text-[9px] font-bold uppercase tracking-tight leading-none whitespace-nowrap">{item.label}</span>
+                  <item.icon size={13} strokeWidth={activeTab === item.id ? 3 : 2} className="shrink-0" />
+                  <span className={`text-[7px] uppercase tracking-tight leading-none whitespace-nowrap ${activeTab === item.id ? 'font-black' : 'font-bold opacity-70'}`}>
+                    {item.label}
+                  </span>
                 </button>
               ))}
             </div>
