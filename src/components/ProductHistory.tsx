@@ -67,7 +67,8 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
     receipts.forEach(r => {
       r.items.forEach(item => {
         const name = item.name.toLowerCase().trim();
-        const unitPrice = item.unitPrice || (item.quantity > 0 ? item.price / item.quantity : item.price);
+        const rawUnitPrice = item.unitPrice || (item.quantity > 0 ? item.price / item.quantity : item.price);
+        const unitPrice = Math.round(rawUnitPrice * 100) / 100; // Round to 2 decimals
         
         if (!history[name]) {
           history[name] = {
@@ -405,14 +406,14 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                           <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
                           <span className="text-[9px] font-semibold text-emerald-500 uppercase tracking-widest flex items-center gap-1">
                              <TrendingDown size={10} className="opacity-50" />
-                             Min: {prod.minPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺
+                             Min: {prod.minPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
                           </span>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
                         <div className="text-lg font-semibold text-slate-900 dark:text-slate-100 tabular-nums font-display leading-none">
-                          {prod.lastPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2})} <span className="text-[10px] font-semibold text-indigo-500">₺</span>
+                          {prod.lastPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-[10px] font-semibold text-indigo-500">₺</span>
                         </div>
                         <div className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest mt-1">Son</div>
                       </div>
@@ -437,7 +438,7 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                              </div>
                           </div>
                           <div className="font-bold text-slate-600 dark:text-slate-400 tabular-nums ml-2">
-                             {pur.unitPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺
+                             {pur.unitPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
                           </div>
                         </div>
                       ))}
