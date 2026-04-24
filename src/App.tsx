@@ -343,7 +343,7 @@ const App: React.FC = () => {
       {isInitializing ? (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex flex-col items-center justify-center">
           <Loader2 className="animate-spin text-indigo-600 mb-4" size={32} />
-          <h1 className="text-xs font-bold uppercase tracking-widest opacity-40">FişAI Yükleniyor...</h1>
+          <h1 className="text-xs font-medium uppercase tracking-widest opacity-40">FişAI Yükleniyor...</h1>
         </div>
       ) : (
         <>
@@ -351,13 +351,13 @@ const App: React.FC = () => {
             <div className="flex items-center gap-2">
               <motion.div 
                 whileHover={{ rotate: 15, scale: 1.1 }}
-                className="bg-indigo-600 rounded-xl text-white font-semibold w-8 h-8 flex items-center justify-center text-sm shadow-xl shadow-indigo-500/30"
+                className="bg-indigo-600 rounded-xl text-white font-medium w-8 h-8 flex items-center justify-center text-sm shadow-xl shadow-indigo-500/30"
               >
                 <div className="relative">
                   <ScanText size={18} />
                 </div>
               </motion.div>
-              <h1 className="text-sm font-bold uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
+              <h1 className="text-sm font-medium uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
                 Fiş<span className="text-indigo-600">AI</span>
               </h1>
             </div>
@@ -386,8 +386,8 @@ const App: React.FC = () => {
                      <Loader2 size={24} className="animate-spin" />
                    </div>
                    <div className="text-center">
-                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] block mb-1 opacity-70">İşlem Yapılıyor</span>
-                     <span className="text-xs font-semibold">{statusText}</span>
+                     <span className="text-[10px] font-medium uppercase tracking-[0.2em] block mb-1 opacity-70">İşlem Yapılıyor</span>
+                     <span className="text-xs font-medium">{statusText}</span>
                    </div>
                 </motion.div>
               )}
@@ -403,7 +403,7 @@ const App: React.FC = () => {
                    <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
                       <ScanText size={14} />
                    </div>
-                   <h2 className="text-[15px] font-bold text-slate-800 dark:text-white uppercase tracking-tight">Ana Sayfa</h2>
+                   <h2 className="text-[15px] font-medium text-slate-800 dark:text-white uppercase tracking-tight">Ana Sayfa</h2>
                 </div>
                 
                 <div className="grid grid-cols-1 gap-1">
@@ -414,8 +414,8 @@ const App: React.FC = () => {
                     
                     <div className="flex justify-between items-start mb-1">
                       <div className="space-y-0.5">
-                        <span className="text-[9px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
-                        <div className="text-2xl font-semibold tracking-tight tabular-nums flex items-baseline gap-1 font-display">
+                        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
+                        <div className="text-2xl font-medium tracking-tight tabular-nums flex items-baseline gap-1 font-display">
                           {activeReceipts
                             .filter(r => {
                               if (dashboardMonth === 'Hepsi') return true;
@@ -424,7 +424,7 @@ const App: React.FC = () => {
                             })
                             .reduce((s, r) => s + r.total, 0)
                             .toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                          <span className="text-base font-bold text-slate-300 dark:text-slate-700">₺</span>
+                          <span className="text-base font-medium text-slate-300 dark:text-slate-700">₺</span>
                         </div>
                       </div>
                       
@@ -432,7 +432,7 @@ const App: React.FC = () => {
                         <select 
                           value={dashboardMonth} 
                           onChange={e => setDashboardMonth(e.target.value)} 
-                          className="bg-indigo-50 dark:bg-slate-800 px-3 py-1.5 pr-8 rounded-xl text-[10px] font-bold text-indigo-700 dark:text-slate-200 border-none outline-none cursor-pointer appearance-none shadow-sm group-hover:bg-indigo-100 dark:group-hover:bg-slate-700 transition-all active:scale-95"
+                          className="bg-indigo-50 dark:bg-slate-800 px-3 py-1.5 pr-8 rounded-xl text-[12px] font-medium text-indigo-700 dark:text-slate-200 border-none outline-none cursor-pointer appearance-none shadow-sm group-hover:bg-indigo-100 dark:group-hover:bg-slate-700 transition-all active:scale-95"
                         >
                           <option value="Hepsi">Tüm Zamanlar</option>
                           {availableMonths.map(m => {
@@ -449,15 +449,15 @@ const App: React.FC = () => {
 
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
-                        <span className="text-base font-semibold font-display">{activeReceipts.length}</span>
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
+                        <span className="text-base font-medium font-display">{activeReceipts.length}</span>
                       </div>
                       <div className="h-6 w-px bg-slate-100 dark:bg-slate-800"></div>
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Ortalama</span>
-                        <span className="text-base font-semibold font-display">
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Ortalama</span>
+                        <span className="text-base font-medium font-display">
                           {(activeReceipts.length > 0 ? activeReceipts.reduce((s, r) => s + r.total, 0) / activeReceipts.length : 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
-                          <span className="text-[10px] ml-0.5 opacity-40">₺</span>
+                          <span className="text-[12px] ml-0.5 opacity-40">₺</span>
                         </span>
                       </div>
                     </div>
@@ -472,13 +472,13 @@ const App: React.FC = () => {
                   >
                      <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                      <Plus size={18} className="relative z-10" /> 
-                     <span className="text-[11px] font-semibold uppercase tracking-widest relative z-10">Fiş Tara</span>
+                     <span className="text-[13px] font-medium uppercase tracking-widest relative z-10">Fiş Tara</span>
                   </motion.button>
                 </div>
 
                 <div className="pt-2">
                   <div className="flex justify-between items-center mb-2 px-2">
-                    <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em]">Son İşlemler</h3>
+                    <h3 className="text-[12px] font-medium text-slate-400 uppercase tracking-[0.2em]">Son İşlemler</h3>
                         <div className="h-px flex-1 mx-4 bg-slate-100 dark:bg-slate-800"></div>
                       </div>
                   
@@ -528,19 +528,19 @@ const App: React.FC = () => {
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
               <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[24px] p-6 space-y-4 shadow-2xl border dark:border-slate-800">
                 <div className="flex justify-between items-center mb-1">
-                  <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Ayarlar</h3>
-                  <button onClick={() => setShowSettings(false)} className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 font-semibold"><X size={16} /></button>
+                  <h3 className="text-[12px] font-medium text-slate-400 uppercase tracking-widest">Ayarlar</h3>
+                  <button onClick={() => setShowSettings(false)} className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 font-medium"><X size={16} /></button>
                 </div>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2.5">
-                    <button onClick={() => importInputRef.current?.click()} className="py-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-colors hover:bg-indigo-100">İçe Aktar</button>
-                    <button onClick={handleExportData} className="py-3 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-colors hover:bg-emerald-100">Cihaza Kaydet</button>
+                    <button onClick={() => importInputRef.current?.click()} className="py-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-indigo-100">İçe Aktar</button>
+                    <button onClick={handleExportData} className="py-3 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-emerald-100">Cihaza Kaydet</button>
                   </div>
                   
                   <button 
                     onClick={handleExportToGoogleDrive} 
                     disabled={isExportingToDrive}
-                    className={`w-full py-3 flex items-center justify-center gap-2.5 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-all ${
+                    className={`w-full py-3 flex items-center justify-center gap-2.5 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-all ${
                       isGoogleConnected 
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
@@ -600,8 +600,8 @@ const App: React.FC = () => {
                       transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                     />
                   )}
-                  <item.icon size={13} strokeWidth={activeTab === item.id ? 3 : 2} className="shrink-0" />
-                  <span className={`text-[7px] uppercase tracking-tight leading-none whitespace-nowrap ${activeTab === item.id ? 'font-black' : 'font-bold opacity-70'}`}>
+                  <item.icon size={15} strokeWidth={activeTab === item.id ? 2 : 1.5} className="shrink-0" />
+                  <span className={`text-[9px] uppercase tracking-tight leading-none whitespace-nowrap ${activeTab === item.id ? 'font-medium' : 'font-medium opacity-70'}`}>
                     {item.label}
                   </span>
                 </button>

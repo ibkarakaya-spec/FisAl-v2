@@ -32,7 +32,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             <AlertCircle size={28} />
           </div>
           
-          <h3 className="text-base font-semibold uppercase tracking-tight dark:text-white mb-2">{title}</h3>
+          <h3 className="text-base font-medium uppercase tracking-tight dark:text-white mb-2">{title}</h3>
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
             {message}
           </p>
@@ -41,7 +41,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 flex gap-3">
           <button 
             onClick={onCancel}
-            className="flex-1 py-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all"
+            className="flex-1 py-3 text-[10px] font-medium uppercase tracking-widest text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all"
           >
             {cancelText}
           </button>
@@ -50,7 +50,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               onConfirm();
               onCancel();
             }}
-            className={`flex-1 py-3 text-[10px] font-semibold uppercase tracking-widest text-white rounded-2xl shadow-lg transition-all active:scale-95 ${variant === 'danger' ? 'bg-red-500 shadow-red-100 dark:shadow-none hover:bg-red-600' : 'bg-indigo-600 shadow-indigo-100 dark:shadow-none hover:bg-indigo-700'}`}
+            className={`flex-1 py-3 text-[10px] font-medium uppercase tracking-widest text-white rounded-2xl shadow-lg transition-all active:scale-95 ${variant === 'danger' ? 'bg-red-500 shadow-red-100 dark:shadow-none hover:bg-red-600' : 'bg-indigo-600 shadow-indigo-100 dark:shadow-none hover:bg-indigo-700'}`}
           >
             {confirmText}
           </button>

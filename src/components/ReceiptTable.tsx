@@ -99,7 +99,7 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
         <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-full mb-4">
           <Calendar size={32} className="text-slate-300" />
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Henüz fiş eklenmemiş</p>
+        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">Henüz fiş eklenmemiş</p>
       </motion.div>
     );
   }
@@ -140,25 +140,25 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
           <div className="flex-1 min-w-0 flex items-center justify-between gap-1 pr-1">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 overflow-hidden">
-                <span className="text-[11px] font-bold text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-tight">
+                <span className="text-[13px] font-medium text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-tight">
                   {r.vendor}
                 </span>
                 {r.imageUrl && (
                   <div className="p-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500 shrink-0">
-                    <ImageIcon size={7} />
+                    <ImageIcon size={8} />
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-1 opacity-70">
-                <span className="text-[7px] font-bold text-slate-500 tabular-nums shrink-0">{formatDateForDisplay(r.date)}</span>
-                <span className={`text-[6px] font-black px-1 rounded-sm border uppercase tracking-wider truncate inline-block ${getCategoryColor(r.category)}`}>
+                <span className="text-[9px] font-medium text-slate-500 tabular-nums shrink-0">{formatDateForDisplay(r.date)}</span>
+                <span className={`text-[8px] font-medium px-1 rounded-sm border uppercase tracking-wider truncate inline-block ${getCategoryColor(r.category)}`}>
                   {r.category.split(' ')[0]}
                 </span>
               </div>
             </div>
             
-            <div className="text-[12px] font-black text-slate-950 dark:text-white tabular-nums font-display shrink-0 ml-1">
-              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[8px] text-indigo-500">₺</span>
+            <div className="text-[14px] font-medium text-slate-950 dark:text-white tabular-nums font-display shrink-0 ml-1">
+              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[10px] text-indigo-500">₺</span>
             </div>
           </div>
           

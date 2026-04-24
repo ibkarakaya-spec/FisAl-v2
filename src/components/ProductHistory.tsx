@@ -308,7 +308,7 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
           <input 
             type="text" 
             placeholder="Ürün adı ile fiyat ara..." 
-            className="w-full bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 pl-11 pr-4 py-3 rounded-2xl text-[11px] font-semibold outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 shadow-sm transition-all"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 pl-11 pr-4 py-3 rounded-2xl text-[11px] font-medium outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 shadow-sm transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -363,8 +363,8 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                     )}
                   </div>
                   <div>
-                    <span className="text-[8px] font-bold text-indigo-500/80 uppercase tracking-widest block mb-0.5">{productData[catName].main}</span>
-                    <h3 className={`text-[11px] font-semibold uppercase tracking-tight transition-colors leading-none ${expandedCategories[catName] ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>
+                    <span className="text-[8px] font-medium text-indigo-500/80 uppercase tracking-widest block mb-0.5">{productData[catName].main}</span>
+                    <h3 className={`text-[11px] font-medium uppercase tracking-tight transition-colors leading-none ${expandedCategories[catName] ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>
                       {catName}
                       <span className="ml-2 text-[9px] font-medium opacity-50 lowercase tracking-normal">({productData[catName].products.length} ürün)</span>
                     </h3>
@@ -391,29 +391,29 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                           whileHover={{ bg: 'rgb(248, 250, 252)' }}
                           className="bg-white dark:bg-slate-950/50 rounded-xl border border-slate-100 dark:border-slate-900 overflow-hidden transition-all group mb-0.5"
                         >
-                    <div className="p-2 flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center justify-center text-lg shrink-0">
-                        {getEmoji(prod.name)}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-[12px] font-bold text-slate-950 dark:text-white truncate uppercase tracking-tight font-display mb-0">{prod.name}</h4>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-0.5">
-                            <History size={8} /> {prod.purchases.length}
-                          </span>
-                          <span className="text-[7px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-0.5">
-                             <TrendingDown size={8} /> {prod.minPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
-                          </span>
-                        </div>
-                      </div>
+                          <div className="p-2 flex items-center gap-2.5">
+                            <div className="w-8 h-8 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center justify-center text-lg shrink-0">
+                              {getEmoji(prod.name)}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-[14px] font-medium text-slate-950 dark:text-white truncate uppercase tracking-tight font-display mb-0">{prod.name}</h4>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-medium text-slate-500 uppercase tracking-widest flex items-center gap-0.5">
+                                  <History size={10} /> {prod.purchases.length}
+                                </span>
+                                <span className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-0.5">
+                                   <TrendingDown size={10} /> {prod.minPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
+                                </span>
+                              </div>
+                            </div>
 
-                      <div className="text-right shrink-0">
-                        <div className="text-[12px] font-black text-slate-950 dark:text-white tabular-nums font-display leading-none">
-                          {prod.lastPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-[8px] text-indigo-500">₺</span>
-                        </div>
-                      </div>
-                    </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-[14px] font-medium text-slate-950 dark:text-white tabular-nums font-display leading-none">
+                                {prod.lastPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-[10px] text-indigo-500">₺</span>
+                              </div>
+                            </div>
+                          </div>
 
                     <div className="bg-slate-50/30 dark:bg-slate-900/40 px-2 py-0.5 divide-y divide-slate-100 dark:divide-slate-900">
                       {prod.purchases.sort((a, b) => {
@@ -426,12 +426,12 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
                         };
                         return parse(b.date).localeCompare(parse(a.date));
                       }).slice(0, 3).map((pur, pidx) => (
-                        <div key={pidx} className="py-0.5 flex items-center justify-between text-[8px] transition-colors">
+                        <div key={pidx} className="py-0.5 flex items-center justify-between text-[10px] transition-colors">
                           <div className="flex flex-1 items-center gap-2 overflow-hidden">
-                             <span className="font-bold text-slate-600 dark:text-slate-400 uppercase truncate">{pur.vendor}</span>
-                             <span className="text-[7px] text-slate-400 tabular-nums shrink-0">{pur.date.substring(0, 5)}</span>
+                             <span className="font-medium text-slate-600 dark:text-slate-400 uppercase truncate">{pur.vendor}</span>
+                             <span className="text-[9px] text-slate-400 tabular-nums shrink-0">{pur.date.substring(0, 5)}</span>
                           </div>
-                          <div className="font-bold text-slate-700 dark:text-slate-300 tabular-nums ml-2">
+                          <div className="font-medium text-slate-700 dark:text-slate-300 tabular-nums ml-2">
                              {pur.unitPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₺
                           </div>
                         </div>
@@ -450,7 +450,7 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
              <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-full mb-4">
                 <TrendingDown size={40} className="text-slate-300 dark:text-slate-600" />
              </div>
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Kayıtlı ürün bulunamadı</p>
+             <p className="text-xs font-medium text-slate-400 uppercase tracking-[0.2em]">Kayıtlı ürün bulunamadı</p>
           </div>
         )}
       </div>

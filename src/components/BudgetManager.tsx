@@ -338,7 +338,7 @@ export const BudgetManager: React.FC<Props> = ({
       <div className="no-print flex items-center justify-between gap-1 mb-1">
         <div className="flex items-center gap-1 bg-white/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-lg px-2 py-0.5">
           <Calendar size={10} className="text-slate-400" />
-          <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="text-[9px] font-bold bg-transparent dark:text-slate-200 outline-none cursor-pointer">
+          <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="text-[11px] font-medium bg-transparent dark:text-slate-200 outline-none cursor-pointer">
             <option value="Hepsi">Tümü</option>
             {availableMonths.map(m => {
               const [y, mm] = m.split('-');
@@ -361,7 +361,7 @@ export const BudgetManager: React.FC<Props> = ({
       >
         <div className="bg-white dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-900 shadow-sm overflow-hidden mb-1">
           <table className="w-full text-left table-fixed">
-            <thead className="bg-slate-50 dark:bg-slate-900/40 text-[7px] font-black text-slate-400 uppercase tracking-widest border-b dark:border-slate-900">
+            <thead className="bg-slate-50 dark:bg-slate-900/40 text-[9px] font-medium text-slate-400 uppercase tracking-widest border-b dark:border-slate-900">
               <tr>
                 <th className="px-3 py-1.5 w-4/12">KAT</th>
                 <th className="px-1 py-1.5 text-right w-4/12">LİMİT</th>
@@ -375,8 +375,8 @@ export const BudgetManager: React.FC<Props> = ({
                 const isEditing = editingLimitCategory === l.category;
                 
                 return (
-                  <tr key={l.category} className="text-[9px] dark:text-slate-400 group hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
-                    <td className="px-3 py-1.5 font-bold truncate uppercase tracking-tight text-slate-800 dark:text-slate-200">{l.category}</td>
+                  <tr key={l.category} className="text-[11px] dark:text-slate-400 group hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                    <td className="px-3 py-1.5 font-medium truncate uppercase tracking-tight text-slate-800 dark:text-slate-200">{l.category}</td>
                     <td 
                       className="px-1 py-1.5 text-right cursor-pointer" 
                       onClick={() => setEditingLimitCategory(l.category)}
@@ -390,18 +390,18 @@ export const BudgetManager: React.FC<Props> = ({
                             onBlur={() => setEditingLimitCategory(null)}
                             onChange={e => handleLimitChange(l.category, e.target.value)} 
                             onKeyDown={e => e.key === 'Enter' && setEditingLimitCategory(null)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border-none text-right text-[10px] font-bold text-indigo-500 outline-none rounded px-1 py-0.5 shadow-inner font-display" 
+                            className="w-full bg-slate-50 dark:bg-slate-800 border-none text-right text-[12px] font-medium text-indigo-500 outline-none rounded px-1 py-0.5 shadow-inner font-display" 
                             placeholder="0" 
                           />
                         </div>
                       ) : (
-                        <div className="text-[10px] font-bold text-indigo-500 tabular-nums font-display group-hover:underline decoration-indigo-200">
-                          {l.limit.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[8px] ml-0.5 opacity-50">₺</span>
+                        <div className="text-[12px] font-medium text-indigo-500 tabular-nums font-display group-hover:underline decoration-indigo-200">
+                          {l.limit.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[10px] ml-0.5 opacity-50">₺</span>
                         </div>
                       )}
                     </td>
-                    <td className={`px-1 py-1.5 pr-3 text-right font-bold tabular-nums font-display ${remaining < 0 ? 'text-rose-500' : 'text-slate-900 dark:text-slate-100'}`}>
-                      {remaining.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[8px] ml-0.5 opacity-40 text-slate-400">₺</span>
+                    <td className={`px-1 py-1.5 pr-3 text-right font-medium tabular-nums font-display ${remaining < 0 ? 'text-rose-500' : 'text-slate-900 dark:text-slate-100'}`}>
+                      {remaining.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[10px] ml-0.5 opacity-40 text-slate-400">₺</span>
                     </td>
                   </tr>
                 );
@@ -415,19 +415,19 @@ export const BudgetManager: React.FC<Props> = ({
           className="bg-white dark:bg-slate-950/40 rounded-2xl p-1.5 border border-slate-100 dark:border-slate-900 space-y-0.5"
         >
           <div className="grid grid-cols-2 gap-1">
-            <input placeholder="Harcama" className="w-full bg-slate-50 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase outline-none" value={manualForm.konu} onChange={e => setManualForm({...manualForm, konu: e.target.value})} />
-            <input placeholder="Market" className="w-full bg-slate-50 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase outline-none" value={manualForm.market} onChange={e => setManualForm({...manualForm, market: e.target.value})} />
+            <input placeholder="Harcama" className="w-full bg-slate-50 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[10px] font-medium uppercase outline-none" value={manualForm.konu} onChange={e => setManualForm({...manualForm, konu: e.target.value})} />
+            <input placeholder="Market" className="w-full bg-slate-50 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[10px] font-medium uppercase outline-none" value={manualForm.market} onChange={e => setManualForm({...manualForm, market: e.target.value})} />
           </div>
           <div className="flex gap-1">
-            <select className="flex-1 bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded-lg text-[8px] font-bold uppercase outline-none cursor-pointer" value={manualForm.kategori} onChange={e => setManualForm({...manualForm, kategori: e.target.value})}>
+            <select className="flex-1 bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded-lg text-[10px] font-medium uppercase outline-none cursor-pointer" value={manualForm.kategori} onChange={e => setManualForm({...manualForm, kategori: e.target.value})}>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input type="date" className="flex-1 bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded-lg text-[8px] font-bold outline-none" value={manualForm.tarih} onChange={e => setManualForm({...manualForm, tarih: e.target.value})} />
+            <input type="date" className="flex-1 bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded-lg text-[10px] font-medium outline-none" value={manualForm.tarih} onChange={e => setManualForm({...manualForm, tarih: e.target.value})} />
           </div>
           <div className="flex items-center gap-1">
             <div className="flex-1 relative">
-              <input placeholder="0.00" className="w-full bg-indigo-50/20 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[10px] font-black text-right outline-none font-display text-indigo-600" value={manualForm.ucret} onChange={e => setManualForm({...manualForm, ucret: e.target.value})} />
-              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-indigo-300 font-bold text-[8px]">₺</div>
+              <input placeholder="0.00" className="w-full bg-indigo-50/20 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-right outline-none font-display text-indigo-600" value={manualForm.ucret} onChange={e => setManualForm({...manualForm, ucret: e.target.value})} />
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-indigo-300 font-medium text-[10px]">₺</div>
             </div>
             <motion.button 
               whileTap={{ scale: 0.9 }}
@@ -445,7 +445,7 @@ export const BudgetManager: React.FC<Props> = ({
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedCategory('Hepsi')} 
-                className={`px-3.5 py-2 rounded-xl text-[9px] font-bold uppercase whitespace-nowrap border transition-all ${selectedCategory === 'Hepsi' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200/60 dark:border-slate-800 hover:border-slate-300'}`}
+                className={`px-3.5 py-2 rounded-xl text-[9px] font-medium uppercase whitespace-nowrap border transition-all ${selectedCategory === 'Hepsi' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200/60 dark:border-slate-800 hover:border-slate-300'}`}
               >
                 HEPSİ
               </motion.button>
@@ -454,7 +454,7 @@ export const BudgetManager: React.FC<Props> = ({
                   whileTap={{ scale: 0.95 }}
                   key={cat} 
                   onClick={() => setSelectedCategory(cat)} 
-                  className={`px-3.5 py-2 rounded-xl text-[9px] font-bold uppercase whitespace-nowrap border transition-all ${selectedCategory === cat ? getCategoryColor(cat) + ' border-transparent shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200/60 dark:border-slate-800 hover:border-slate-300'}`}
+                  className={`px-3.5 py-2 rounded-xl text-[9px] font-medium uppercase whitespace-nowrap border transition-all ${selectedCategory === cat ? getCategoryColor(cat) + ' border-transparent shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200/60 dark:border-slate-800 hover:border-slate-300'}`}
                 >
                   {cat}
                 </motion.button>
@@ -471,8 +471,8 @@ export const BudgetManager: React.FC<Props> = ({
               
               <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.2em] opacity-70 mb-0.5">{selectedCategory === 'Hepsi' ? 'Toplam Harcama' : selectedCategory}</span>
-                  <div className="text-3xl font-semibold tracking-tighter tabular-nums font-display">
+                  <span className="text-[9px] font-medium uppercase tracking-[0.2em] opacity-70 mb-0.5">{selectedCategory === 'Hepsi' ? 'Toplam Harcama' : selectedCategory}</span>
+                  <div className="text-3xl font-medium tracking-tighter tabular-nums font-display">
                     {categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-base ml-1 opacity-50">₺</span>
                   </div>
                 </div>
@@ -484,7 +484,7 @@ export const BudgetManager: React.FC<Props> = ({
               <div className="space-y-2 relative z-10">
                 <div className="flex items-center gap-1.5">
                   <BarChart size={10} className="opacity-70" />
-                  <span className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-70">Haftalık Analiz</span>
+                  <span className="text-[8px] font-medium uppercase tracking-[0.2em] opacity-70">Haftalık Analiz</span>
                 </div>
                 <div className="flex gap-1.5 items-end h-10">
                   {weeklyStats.map((val, idx) => {
@@ -501,7 +501,7 @@ export const BudgetManager: React.FC<Props> = ({
                               initial={{ opacity: 0, scale: 0.8, y: 5 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.8, y: 5 }}
-                              className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-indigo-600 text-[9px] font-bold py-1 px-2.5 rounded-lg shadow-2xl z-30 whitespace-nowrap"
+                              className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-indigo-600 text-[9px] font-medium py-1 px-2.5 rounded-lg shadow-2xl z-30 whitespace-nowrap"
                             >
                               {val.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}₺
                             </motion.div>
@@ -515,7 +515,7 @@ export const BudgetManager: React.FC<Props> = ({
                             className={`w-full transition-colors duration-300 ${activeWeekTooltip === idx ? 'bg-indigo-300' : 'bg-white'}`} 
                           ></motion.div>
                         </div>
-                        <span className={`text-[6px] font-bold tracking-widest transition-opacity ${activeWeekTooltip === idx ? 'opacity-100' : 'opacity-50'}`}>H{idx+1}</span>
+                        <span className={`text-[6px] font-medium tracking-widest transition-opacity ${activeWeekTooltip === idx ? 'opacity-100' : 'opacity-50'}`}>H{idx+1}</span>
                       </div>
                     );
                   })}
@@ -535,15 +535,15 @@ export const BudgetManager: React.FC<Props> = ({
                 >
                   <div className={`w-1 h-8 rounded-full shrink-0 ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-bold block truncate uppercase text-[10px] text-slate-800 dark:text-slate-100 leading-tight mb-0.5 tracking-tight group-hover:text-indigo-600 transition-colors">{r.vendor}</span>
+                    <span className="font-medium block truncate uppercase text-[10px] text-slate-800 dark:text-slate-100 leading-tight mb-0.5 tracking-tight group-hover:text-indigo-600 transition-colors">{r.vendor}</span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8px] font-bold text-slate-400 tabular-nums">{formatDateForDisplay(r.date)}</span>
+                      <span className="text-[8px] font-medium text-slate-400 tabular-nums">{formatDateForDisplay(r.date)}</span>
                       <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-                      <span className={`text-[7px] font-bold px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
+                      <span className={`text-[7px] font-medium px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end shrink-0 ml-1">
-                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums font-display mb-0.5">{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[9px] ml-0.5 opacity-40">₺</span></div>
+                    <div className="text-xs font-medium text-slate-900 dark:text-slate-100 tabular-nums font-display mb-0.5">{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[9px] ml-0.5 opacity-40">₺</span></div>
                     <motion.button 
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -560,7 +560,7 @@ export const BudgetManager: React.FC<Props> = ({
                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-full mb-3">
                    <TrendingDown size={24} className="text-slate-300" />
                  </div>
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bu kategoride harcama yok</p>
+                 <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Bu kategoride harcama yok</p>
               </div>
             )}
           </div>
@@ -571,14 +571,14 @@ export const BudgetManager: React.FC<Props> = ({
         <div className="fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl">
             <div className="flex justify-between items-center">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Bütçe Transferi</h4>
+              <h4 className="text-[10px] font-medium uppercase tracking-widest text-slate-400">Bütçe Transferi</h4>
               <X size={18} onClick={() => setShowTransfer(false)} className="text-slate-400 cursor-pointer" />
             </div>
             <div className="space-y-3">
-              <select className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-bold" value={transferForm.from} onChange={e => setTransferForm({...transferForm, from: e.target.value})}><option value="">Nereden Alınsın?</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
-              <select className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-bold" value={transferForm.to} onChange={e => setTransferForm({...transferForm, to: e.target.value})}><option value="">Nereye Aktarılsın?</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
-              <input type="number" placeholder="Tutar (₺)" className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-bold" value={transferForm.amount} onChange={e => setTransferForm({...transferForm, amount: e.target.value})} />
-              <button onClick={handleTransfer} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-bold uppercase shadow-lg">Aktar</button>
+              <select className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-medium" value={transferForm.from} onChange={e => setTransferForm({...transferForm, from: e.target.value})}><option value="">Nereden Alınsın?</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
+              <select className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-medium" value={transferForm.to} onChange={e => setTransferForm({...transferForm, to: e.target.value})}><option value="">Nereye Aktarılsın?</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
+              <input type="number" placeholder="Tutar (₺)" className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-medium" value={transferForm.amount} onChange={e => setTransferForm({...transferForm, amount: e.target.value})} />
+              <button onClick={handleTransfer} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-medium uppercase shadow-lg">Aktar</button>
             </div>
           </div>
         </div>
@@ -588,17 +588,17 @@ export const BudgetManager: React.FC<Props> = ({
         <div className="fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div className="flex justify-between items-center">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Kategori Yönetimi</h4>
+              <h4 className="text-[10px] font-medium uppercase tracking-widest text-slate-400">Kategori Yönetimi</h4>
               <X size={18} onClick={() => setShowManageCategories(false)} className="text-slate-400 cursor-pointer" />
             </div>
             <div className="flex gap-2">
-              <input className="flex-1 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-bold outline-none" placeholder="Yeni Ad..." value={newCatName} onChange={e => setNewCatName(e.target.value)} />
+              <input className="flex-1 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-medium outline-none" placeholder="Yeni Ad..." value={newCatName} onChange={e => setNewCatName(e.target.value)} />
               <button onClick={() => { if(newCatName && !categories.includes(newCatName)) { setCategories([...categories, newCatName]); setNewCatName(""); } }} className="bg-indigo-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"><Plus size={24} /></button>
             </div>
             <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {categories.map(cat => (
                 <div key={cat} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700">
-                  <span className="text-[11px] font-bold uppercase">{cat}</span>
+                  <span className="text-[11px] font-medium uppercase">{cat}</span>
                   <Trash2 size={16} className="text-red-400 cursor-pointer" onClick={() => handleDeleteCategory(cat)} />
                 </div>
               ))}

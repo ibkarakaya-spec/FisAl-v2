@@ -41,7 +41,7 @@ export const ImageEditor: React.FC<Props> = ({ imageUrl, onConfirm, onCancel }) 
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sliders size={20} className="text-indigo-600" />
-            <h3 className="text-lg font-bold text-slate-900">Görüntüyü İyileştir</h3>
+            <h3 className="text-lg font-medium text-slate-900">Görüntüyü İyileştir</h3>
           </div>
           <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
             <X size={20} />
@@ -60,7 +60,7 @@ export const ImageEditor: React.FC<Props> = ({ imageUrl, onConfirm, onCancel }) 
           <div className="w-full md:w-72 p-6 border-t md:border-t-0 md:border-l border-slate-100 space-y-6">
             <button 
               onClick={handleAutoEnhance}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-bold border border-indigo-100 hover:bg-indigo-100 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium border border-indigo-100 hover:bg-indigo-100 transition-colors"
             >
               <Zap size={16} />
               Otomatik İyileştir
@@ -68,7 +68,7 @@ export const ImageEditor: React.FC<Props> = ({ imageUrl, onConfirm, onCancel }) 
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <div className="flex justify-between text-xs font-bold text-slate-500 uppercase">
+                <div className="flex justify-between text-xs font-medium text-slate-500 uppercase">
                   <span className="flex items-center gap-1"><Sun size={12} /> Parlaklık</span>
                   <span>{Math.round(options.brightness * 100)}%</span>
                 </div>
@@ -81,7 +81,7 @@ export const ImageEditor: React.FC<Props> = ({ imageUrl, onConfirm, onCancel }) 
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between text-xs font-bold text-slate-500 uppercase">
+                <div className="flex justify-between text-xs font-medium text-slate-500 uppercase">
                   <span className="flex items-center gap-1"><Contrast size={12} /> Kontrast</span>
                   <span>{Math.round(options.contrast * 100)}%</span>
                 </div>
@@ -112,7 +112,7 @@ export const ImageEditor: React.FC<Props> = ({ imageUrl, onConfirm, onCancel }) 
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-3">
           <button 
             onClick={onCancel}
-            className="flex-1 py-3 px-4 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+            className="flex-1 py-3 px-4 text-slate-600 font-medium hover:bg-slate-200 rounded-xl transition-colors"
           >
             Vazgeç
           </button>
@@ -122,7 +122,7 @@ export const ImageEditor: React.FC<Props> = ({ imageUrl, onConfirm, onCancel }) 
               onConfirm(previewUrl);
             }}
             disabled={isProcessing}
-            className="flex-[2] py-3 px-4 bg-indigo-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
+            className="flex-[2] py-3 px-4 bg-indigo-600 text-white font-medium rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
           >
             {isProcessing ? 'İşleniyor...' : (
               <>

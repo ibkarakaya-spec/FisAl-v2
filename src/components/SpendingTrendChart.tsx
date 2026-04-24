@@ -59,12 +59,12 @@ export const SpendingTrendChart: React.FC<Props> = ({ receipts, selectedMonth })
             <div className="bg-indigo-50 dark:bg-indigo-950/30 p-1 rounded-lg text-indigo-600">
                <BarChart3 size={12} />
             </div>
-            <h3 className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+            <h3 className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">
               {isAll ? 'Aylık Trend' : 'Günlük Dağılım'}
             </h3>
          </div>
          {chartData.length > 0 && (
-           <span className="text-[9px] font-bold text-slate-400 uppercase">Max: {Math.round(maxValue)}₺</span>
+           <span className="text-[11px] font-medium text-slate-400 uppercase">Max: {Math.round(maxValue)}₺</span>
          )}
       </div>
 
@@ -73,14 +73,14 @@ export const SpendingTrendChart: React.FC<Props> = ({ receipts, selectedMonth })
            const heightPercent = Math.max((item.value / maxValue) * 100, 4);
            return (
              <div key={index} className="flex-1 flex flex-col items-center justify-end h-full group relative cursor-pointer">
-                <div className="mb-1 opacity-0 group-hover:opacity-100 transition-all absolute bottom-full bg-slate-900 text-white text-[8px] font-bold py-1 px-1.5 rounded shadow-lg z-20 pointer-events-none whitespace-nowrap">
+                <div className="mb-1 opacity-0 group-hover:opacity-100 transition-all absolute bottom-full bg-slate-900 text-white text-[10px] font-medium py-1 px-1.5 rounded shadow-lg z-20 pointer-events-none whitespace-nowrap">
                    {item.value.toFixed(0)} ₺
                 </div>
                 <div 
                   className="w-full max-w-[16px] bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-500 rounded-t-[3px] transition-all duration-300"
                   style={{ height: `${heightPercent}%` }}
                 ></div>
-                <span className="text-[7px] font-bold text-slate-400 mt-1 truncate w-full text-center">
+                <span className="text-[9px] font-medium text-slate-400 mt-1 truncate w-full text-center">
                    {isAll ? item.label.split('-')[1] : item.label}
                 </span>
              </div>
