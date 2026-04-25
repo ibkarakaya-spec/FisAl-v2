@@ -172,48 +172,51 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 10 }}
                         key={idx} 
-                        className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-[24px] border border-slate-100 dark:border-slate-800 flex gap-3.5 items-center group/item hover:border-indigo-200 transition-colors"
+                        className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-[24px] border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-2 sm:gap-3.5 items-stretch sm:items-center group/item hover:border-indigo-200 transition-colors"
                       >
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1 min-w-0">
                            <label className="text-[8px] font-medium text-slate-500 uppercase tracking-widest ml-1">Ürün Adı</label>
                            <input 
-                             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2.5 rounded-xl text-[11px] font-medium text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 uppercase placeholder:text-slate-400" 
+                             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2 rounded-xl text-[11px] font-medium text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 uppercase placeholder:text-slate-400" 
                              placeholder="Ürün Adı Yazınız..."
                              value={item.name} 
                              onChange={e => handleItemChange(idx, 'name', e.target.value)} 
                            />
                         </div>
-                        <div className="w-20 space-y-1">
-                           <label className="text-[8px] font-medium text-slate-500 uppercase tracking-widest ml-1">Miktar</label>
-                           <input 
-                             type="number" 
-                             step="any"
-                             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2.5 rounded-xl text-[11px] font-medium text-center text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
-                             value={item.quantity} 
-                             onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} 
-                           />
+
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 sm:w-20 space-y-1 shrink-0">
+                             <label className="text-[8px] font-medium text-slate-500 uppercase tracking-widest ml-1">Miktar</label>
+                             <input 
+                               type="number" 
+                               step="any"
+                               className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2 rounded-xl text-[11px] font-medium text-center text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
+                               value={item.quantity} 
+                               onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} 
+                             />
+                          </div>
+                          <div className="flex-1 sm:w-28 space-y-1">
+                             <label className="text-[8px] font-medium text-slate-500 uppercase tracking-widest ml-1">Fiyat</label>
+                             <div className="relative">
+                                <input 
+                                  type="number" 
+                                  step="any"
+                                  className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2 pl-7 rounded-xl text-[11px] font-medium text-right text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
+                                  value={item.price} 
+                                  onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} 
+                                />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 font-medium text-[10px]">₺</div>
+                             </div>
+                          </div>
+                          <motion.button 
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setEditData({...editData, items: editData.items.filter((_, i) => i !== idx)})} 
+                            className="p-2 text-slate-300 hover:text-rose-500 mt-4 sm:mt-0 shrink-0"
+                          >
+                            <Trash2 size={16} />
+                          </motion.button>
                         </div>
-                        <div className="w-28 space-y-1">
-                           <label className="text-[8px] font-medium text-slate-500 uppercase tracking-widest ml-1">Fiyat</label>
-                           <div className="relative">
-                              <input 
-                                type="number" 
-                                step="any"
-                                className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2.5 pl-7 rounded-xl text-[11px] font-medium text-right text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
-                                value={item.price} 
-                                onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} 
-                              />
-                              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 font-medium text-[10px]">₺</div>
-                           </div>
-                        </div>
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => setEditData({...editData, items: editData.items.filter((_, i) => i !== idx)})} 
-                          className="p-2 text-slate-300 hover:text-rose-500 mt-4"
-                        >
-                          <Trash2 size={16} />
-                        </motion.button>
                       </motion.div>
                     ))}
                   </AnimatePresence>
