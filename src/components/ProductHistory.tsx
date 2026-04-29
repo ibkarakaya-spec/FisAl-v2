@@ -173,9 +173,10 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
       return { main: 'Diğer', sub: 'Diğer Ürünler' };
     };
 
-    const filtered = Object.values(history).filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = Object.values(history).filter(p => {
+      if (!p.name) return false;
+      return p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
     const groups: Record<string, { main: string, products: typeof filtered }> = {};
     filtered.forEach(p => {
@@ -263,30 +264,32 @@ export const ProductHistory: React.FC<Props> = ({ receipts }) => {
     'Diğer': 'https://images.unsplash.com/photo-1534452203294-49c891ca7ee1?q=80&w=800&auto=format&fit=crop'
   };
 
-  const groupKeys = Object.keys(productData).sort((a, b) => {
-    // Custom sort order for main categories
-    const mainOrder: Record<string, number> = {
-      'Temel Gıda ve Bakliyat': 1,
-      'Süt ve Kahvaltılık': 2,
-      'Et, Tavuk ve Balık': 3,
-      'Meyve ve Sebze': 4,
-      'Yağlar': 5,
-      'Atıştırmalıklar': 6,
-      'İçecekler': 7,
-      'Dondurulmuş ve Hazır Gıda': 8,
-      'Ekmek ve Unlu Mamüller': 9,
-      'Temizlik ve Bakım': 10
-    };
+  const groupKeys = useMemo(() => {
+    return Object.keys(productData).sort((a, b) => {
+      // Custom sort order for main categories
+      const mainOrder: Record<string, number> = {
+        'Temel Gıda ve Bakliyat': 1,
+        'Süt ve Kahvaltılık': 2,
+        'Et, Tavuk ve Balık': 3,
+        'Meyve ve Sebze': 4,
+        'Yağlar': 5,
+        'Atıştırmalıklar': 6,
+        'İçecekler': 7,
+        'Dondurulmuş ve Hazır Gıda': 8,
+        'Ekmek ve Unlu Mamüller': 9,
+        'Temizlik ve Bakım': 10
+      };
 
-    const orderA = mainOrder[productData[a].main] || 99;
-    const orderB = mainOrder[productData[b].main] || 99;
+      const orderA = mainOrder[productData[a].main] || 99;
+      const orderB = mainOrder[productData[b].main] || 99;
 
-    if (orderA !== orderB) return orderA - orderB;
-    return a.localeCompare(b);
-  });
+      if (orderA !== orderB) return orderA - orderB;
+      return a.localeCompare(b);
+    });
+  }, [productData]);
 
   // Auto-expand on search
-  useMemo(() => {
+  React.useEffect(() => {
     if (searchTerm.trim().length > 0) {
       const next: Record<string, boolean> = {};
       groupKeys.forEach(cat => next[cat] = true);
