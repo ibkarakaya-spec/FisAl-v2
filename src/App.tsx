@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
@@ -29,6 +29,8 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem('app_theme') as ThemeMode) || 'system');
   const [showSettings, setShowSettings] = useState(false);
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   const [dashboardMonth, setDashboardMonth] = useState<string>(() => {
     return localStorage.getItem('app_last_selected_month') || "Hepsi";
@@ -118,12 +120,25 @@ const App: React.FC = () => {
       try {
         const imported = JSON.parse(event.target?.result as string);
         if (Array.isArray(imported)) {
-          const formattedReceipts: ReceiptData[] = imported.map((r: any) => {
+          const existingIds = new Set(receipts.map(r => r.id));
+          const existingSignatures = new Set(receipts.map(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}`));
+          
+          let dupeCount = 0;
+          const formattedReceipts: ReceiptData[] = [];
+
+          imported.forEach((r: any) => {
             const rawPrice = r.total ?? r.price ?? r.ucret ?? r.amount;
             const parsedPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(',', '.')) || 0;
+            const id = r.id || Math.random().toString(36).substr(2, 9);
+            const signature = `${(r.vendor || r.market || 'BİLİNMEYEN').toUpperCase()}|${r.date || r.tarih || ''}|${parsedPrice}`;
+
+            if (existingIds.has(id) || existingSignatures.has(signature)) {
+              dupeCount++;
+              return;
+            }
             
-            return {
-              id: r.id || Math.random().toString(36).substr(2, 9),
+            formattedReceipts.push({
+              id,
               vendor: (r.vendor || r.market || 'BİLİNMEYEN').toUpperCase(),
               date: r.date || r.tarih || new Date().toLocaleDateString('tr-TR'),
               total: parsedPrice,
@@ -134,10 +149,17 @@ const App: React.FC = () => {
               confidence: r.confidence || 1,
               timestamp: r.timestamp || Date.now(),
               imageUrl: r.imageUrl
-            };
+            });
           });
-          setReceipts(prev => [...prev, ...formattedReceipts]);
-          alert("Veriler başarıyla içe aktarıldı.");
+
+          if (formattedReceipts.length > 0) {
+            setReceipts(prev => [...prev, ...formattedReceipts]);
+            alert(`${formattedReceipts.length} yeni fiş aktarıldı.${dupeCount > 0 ? ` (${dupeCount} kopya atlandı)` : ''}`);
+          } else if (dupeCount > 0) {
+            alert("Tüm fişler zaten mevcut. Hiçbir yeni veri eklenmedi.");
+          } else {
+            alert("Aktarılacak geçerli veri bulunamadı.");
+          }
         }
       } catch (e) {
         alert("Geçersiz dosya formatı.");
@@ -338,6 +360,43 @@ const App: React.FC = () => {
     }
   };
 
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    
+    setConfirmState({
+      isOpen: true,
+      title: `${selectedIds.length} Kayıt Silinsin mi?`,
+      message: "Seçilen tüm kayıtlar kalıcı olarak silinecektir.",
+      onConfirm: () => {
+        setReceipts(prev => prev.filter(r => !selectedIds.includes(r.id)));
+        setSelectedIds([]);
+      }
+    });
+  };
+
+  const handleExportSelected = () => {
+    if (selectedIds.length === 0) return;
+    const selectedReceipts = receipts.filter(r => selectedIds.includes(r.id));
+    
+    try {
+      const dataStr = JSON.stringify(selectedReceipts, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      const exportFileDefaultName = `fis_ai_selected_export_${new Date().toISOString().split('T')[0]}.json`;
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    } catch (e) {
+      alert("Dışa aktarma hatası.");
+    }
+  };
+
   return (
     <div className="min-h-screen pb-16 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 transition-colors">
       {isInitializing ? (
@@ -482,27 +541,69 @@ const App: React.FC = () => {
                         <div className="h-px flex-1 mx-4 bg-slate-100 dark:bg-slate-800"></div>
                       </div>
                   
-                  <ReceiptTable 
-                    receipts={activeReceipts.filter(r => {
-                      if (dashboardMonth === 'Hepsi') return true;
-                      if (!r.date) return false;
-                      let rMonth = '';
-                      if (r.date.includes('.')) {
-                        const parts = r.date.split('.');
-                        rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
-                      } else if (r.date.includes('-')) {
-                        rMonth = r.date.substring(0, 7);
-                      }
-                      return rMonth === dashboardMonth;
-                    })}
-                    onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 
-                    onView={setSelectedReceipt} 
-                    onCopySingle={() => Promise.resolve(true)}
-                    viewMode="standard" 
-                  />
+                    <ReceiptTable 
+                      receipts={activeReceipts.filter(r => {
+                        if (dashboardMonth === 'Hepsi') return true;
+                        if (!r.date) return false;
+                        let rMonth = '';
+                        if (r.date.includes('.')) {
+                          const parts = r.date.split('.');
+                          rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+                        } else if (r.date.includes('-')) {
+                          rMonth = r.date.substring(0, 7);
+                        }
+                        return rMonth === dashboardMonth;
+                      })}
+                      onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 
+                      onView={setSelectedReceipt} 
+                      onCopySingle={() => Promise.resolve(true)}
+                      viewMode="standard" 
+                      selectedIds={selectedIds}
+                      onToggleSelect={handleToggleSelect}
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+          <AnimatePresence>
+            {selectedIds.length > 0 && (
+              <motion.div 
+                initial={{ y: 100, x: '-50%', opacity: 0 }}
+                animate={{ y: 0, x: '-50%', opacity: 1 }}
+                exit={{ y: 100, x: '-50%', opacity: 0 }}
+                className="fixed bottom-20 left-1/2 z-50 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 min-w-[300px]"
+              >
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-medium uppercase tracking-widest opacity-60">Seçili</span>
+                  <span className="text-sm font-medium">{selectedIds.length} Kayıt</span>
+                </div>
+                <div className="h-8 w-px bg-white/20 dark:bg-slate-200"></div>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={handleExportSelected}
+                    className="p-2 hover:bg-white/10 dark:hover:bg-slate-100 rounded-xl transition-colors flex flex-col items-center gap-1"
+                  >
+                    <CloudIcon size={16} />
+                    <span className="text-[8px] font-medium uppercase tracking-tighter">Aktar</span>
+                  </button>
+                  <button 
+                    onClick={handleDeleteSelected}
+                    className="p-2 hover:bg-rose-500/20 text-rose-400 rounded-xl transition-colors flex flex-col items-center gap-1"
+                  >
+                    <Trash2 size={16} />
+                    <span className="text-[8px] font-medium uppercase tracking-tighter">Sil</span>
+                  </button>
+                  <button 
+                    onClick={() => setSelectedIds([])}
+                    className="p-2 hover:bg-white/10 dark:hover:bg-slate-100 rounded-xl transition-colors flex flex-col items-center gap-1"
+                  >
+                    <X size={16} />
+                    <span className="text-[8px] font-medium uppercase tracking-tighter">İptal</span>
+                  </button>
                 </div>
               </motion.div>
             )}
+          </AnimatePresence>
 
             {activeTab === 'prices' && <ProductHistory receipts={activeReceipts} />}
             {activeTab === 'budget' && (
@@ -520,6 +621,8 @@ const App: React.FC = () => {
                 onViewReceipt={setSelectedReceipt} 
                 selectedMonth={dashboardMonth}
                 setSelectedMonth={setDashboardMonth}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
               />
             )}
           </main>

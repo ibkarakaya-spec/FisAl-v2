@@ -77,7 +77,13 @@ const LogoIcon: React.FC<{ vendor: string, category: string }> = ({ vendor, cate
   );
 };
 
-export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) => {
+export const ReceiptTable: React.FC<Props> = ({ 
+  receipts, 
+  onDelete, 
+  onView, 
+  selectedIds = [], 
+  onToggleSelect 
+}) => {
   const formatDateForDisplay = (dateStr: string) => {
     if (!dateStr) return '';
     if (dateStr.includes('-')) {
@@ -126,52 +132,95 @@ export const ReceiptTable: React.FC<Props> = ({ receipts, onDelete, onView }) =>
       animate="show"
       className="space-y-0"
     >
-      {receipts.map((r) => (
-        <motion.div 
-          key={r.id} 
-          variants={item}
-          whileHover={{ scale: 1.01, x: 2 }}
-          whileTap={{ scale: 0.99 }}
-          onClick={() => onView(r)} 
-          className="group bg-white dark:bg-slate-950/50 rounded-xl border border-slate-100 dark:border-slate-900 p-1 flex items-center gap-2 transition-all hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer mb-0.5"
-        >
-          <LogoIcon vendor={r.vendor} category={r.category} />
-          
-          <div className="flex-1 min-w-0 flex items-center justify-between gap-1 pr-1">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 overflow-hidden">
-                <span className="text-[13px] font-medium text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-tight">
-                  {r.vendor}
-                </span>
-                {r.imageUrl && (
-                  <div className="p-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500 shrink-0">
-                    <ImageIcon size={8} />
-                  </div>
-                )}
+      <div className="flex items-center justify-between mb-2 px-2 sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md z-10 py-2">
+        <div className="flex items-center gap-2">
+          {onToggleSelect && (
+             <button 
+               onClick={() => {
+                 const allPageIds = receipts.map(r => r.id);
+                 const allSelected = allPageIds.every(id => selectedIds.includes(id));
+                 if (allSelected) {
+                   allPageIds.forEach(id => selectedIds.includes(id) && onToggleSelect(id));
+                 } else {
+                   allPageIds.forEach(id => !selectedIds.includes(id) && onToggleSelect(id));
+                 }
+               }}
+               className="text-[9px] font-medium uppercase tracking-widest text-indigo-600 dark:text-indigo-400 hover:opacity-70 transition-opacity"
+             >
+               {receipts.every(r => selectedIds.includes(r.id)) ? 'Seçimi Kaldır' : 'Tümünü Seç'}
+             </button>
+          )}
+        </div>
+      </div>
+
+      {receipts.map((r) => {
+        const isSelected = selectedIds.includes(r.id);
+        
+        return (
+          <motion.div 
+            key={r.id} 
+            variants={item}
+            whileHover={{ scale: 1.01, x: 2 }}
+            whileTap={{ scale: 0.99 }}
+            className={`group rounded-xl border p-1 flex items-center gap-2 transition-all cursor-pointer mb-0.5 ${
+              isSelected 
+                ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' 
+                : 'bg-white dark:bg-slate-950/50 border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900'
+            }`}
+          >
+            {onToggleSelect && (
+              <div 
+                className="p-1 px-2 shrink-0"
+                onClick={(e) => { e.stopPropagation(); onToggleSelect(r.id); }}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                  isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700'
+                }`}>
+                  {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                </div>
               </div>
-              <div className="flex items-center gap-1 opacity-70">
-                <span className="text-[9px] font-medium text-slate-500 tabular-nums shrink-0">{formatDateForDisplay(r.date)}</span>
-                <span className={`text-[8px] font-medium px-1 rounded-sm border uppercase tracking-wider truncate inline-block ${getCategoryColor(r.category)}`}>
-                  {r.category.split(' ')[0]}
-                </span>
+            )}
+            
+            <div className="flex-1 flex items-center gap-2 min-w-0" onClick={() => onView(r)}>
+              <LogoIcon vendor={r.vendor} category={r.category} />
+              
+              <div className="flex-1 min-w-0 flex items-center justify-between gap-1 pr-1">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <span className="text-[13px] font-medium text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-tight">
+                      {r.vendor}
+                    </span>
+                    {r.imageUrl && (
+                      <div className="p-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500 shrink-0">
+                        <ImageIcon size={8} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 opacity-70">
+                    <span className="text-[9px] font-medium text-slate-500 tabular-nums shrink-0">{formatDateForDisplay(r.date)}</span>
+                    <span className={`text-[8px] font-medium px-1 rounded-sm border uppercase tracking-wider truncate inline-block ${getCategoryColor(r.category)}`}>
+                      {r.category.split(' ')[0]}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="text-[14px] font-medium text-slate-950 dark:text-white tabular-nums font-display shrink-0 ml-1">
+                  {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[10px] text-indigo-500">₺</span>
+                </div>
               </div>
             </div>
             
-            <div className="text-[14px] font-medium text-slate-950 dark:text-white tabular-nums font-display shrink-0 ml-1">
-              {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[10px] text-indigo-500">₺</span>
+            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity pr-1">
+              <button 
+                onClick={(e) => { e.stopPropagation(); onDelete(r.id); }} 
+                className="p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400"
+              >
+                <Trash2 size={10} />
+              </button>
             </div>
-          </div>
-          
-          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity pr-1">
-            <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(r.id); }} 
-              className="p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400"
-            >
-              <Trash2 size={10} />
-            </button>
-          </div>
-        </motion.div>
-      ))}
+          </motion.div>
+        );
+      })}
     </motion.div>
   );
 };

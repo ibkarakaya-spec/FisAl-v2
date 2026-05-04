@@ -30,6 +30,8 @@ interface Props {
   exportMode?: 'detailed' | 'summary';
   selectedMonth: string;
   setSelectedMonth: (month: string) => void;
+  selectedIds?: string[];
+  onToggleSelect?: (id: string) => void;
 }
 
 export const BudgetManager: React.FC<Props> = ({ 
@@ -41,7 +43,9 @@ export const BudgetManager: React.FC<Props> = ({
   onDeleteReceipt, 
   onViewReceipt, 
   selectedMonth,
-  setSelectedMonth
+  setSelectedMonth,
+  selectedIds = [],
+  onToggleSelect
 }) => {
   const formatDateForDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -526,35 +530,55 @@ export const BudgetManager: React.FC<Props> = ({
 
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200/50 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
             {filteredReceipts.length > 0 ? (
-              filteredReceipts.map((r) => (
-                <motion.div 
-                  layout
-                  key={r.id} 
-                  onClick={() => onViewReceipt(r)} 
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer transition-colors group"
-                >
-                  <div className={`w-1 h-8 rounded-full shrink-0 ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium block truncate uppercase text-[10px] text-slate-800 dark:text-slate-100 leading-tight mb-0.5 tracking-tight group-hover:text-indigo-600 transition-colors">{r.vendor}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[8px] font-medium text-slate-400 tabular-nums">{formatDateForDisplay(r.date)}</span>
-                      <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-                      <span className={`text-[7px] font-medium px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
+              filteredReceipts.map((r) => {
+                const isSelected = selectedIds.includes(r.id);
+                return (
+                  <motion.div 
+                    layout
+                    key={r.id} 
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors group border-l-4 ${
+                      isSelected 
+                        ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500' 
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/30 border-transparent dark:border-slate-800'
+                    }`}
+                  >
+                    {onToggleSelect && (
+                      <div 
+                        className="shrink-0 p-1"
+                        onClick={(e) => { e.stopPropagation(); onToggleSelect(r.id); }}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                          isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700'
+                        }`}>
+                          {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex-1 flex items-center gap-3 min-w-0" onClick={() => onViewReceipt(r)}>
+                      <div className={`w-1 h-8 rounded-full shrink-0 ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium block truncate uppercase text-[10px] text-slate-800 dark:text-slate-100 leading-tight mb-0.5 tracking-tight group-hover:text-indigo-600 transition-colors font-display tracking-tight">{r.vendor}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-medium text-slate-400 tabular-nums">{formatDateForDisplay(r.date)}</span>
+                          <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                          <span className={`text-[7px] font-medium px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0 ml-1">
+                        <div className="text-xs font-medium text-slate-900 dark:text-slate-100 tabular-nums font-display mb-0.5">{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[9px] ml-0.5 opacity-40">₺</span></div>
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); onDeleteReceipt(r.id); }} 
+                          className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-all"
+                        >
+                          <Trash2 size={12} />
+                        </motion.button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end shrink-0 ml-1">
-                    <div className="text-xs font-medium text-slate-900 dark:text-slate-100 tabular-nums font-display mb-0.5">{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[9px] ml-0.5 opacity-40">₺</span></div>
-                    <motion.button 
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => { e.stopPropagation(); onDeleteReceipt(r.id); }} 
-                      className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-all"
-                    >
-                      <Trash2 size={12} />
-                    </motion.button>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                );
+              })
             ) : (
               <div className="py-12 flex flex-col items-center justify-center text-center px-6">
                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-full mb-3">
