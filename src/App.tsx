@@ -196,7 +196,16 @@ const App: React.FC = () => {
       return dateStr; // Varsayılan olarak YYYY-MM-DD olduğu varsayılır
     };
 
-    return [...receipts].sort((a, b) => {
+    // Yinelenenleri filtrele (Vendor + Date + Total signature)
+    const seen = new Set<string>();
+    const uniqueReceipts = receipts.filter(r => {
+      const signature = `${r.vendor.toUpperCase()}|${r.date}|${r.total}`;
+      if (seen.has(signature)) return false;
+      seen.add(signature);
+      return true;
+    });
+
+    return [...uniqueReceipts].sort((a, b) => {
       const dateA = parseDateForSort(a.date);
       const dateB = parseDateForSort(b.date);
       if (dateA !== dateB) return dateB.localeCompare(dateA);
@@ -308,8 +317,23 @@ const App: React.FC = () => {
         imageUrl: optimizedImg,
       };
       
-      console.log("Yeni fiş ekleniyor:", newReceipt);
-      setReceipts(prev => [newReceipt, ...prev]);
+      const signature = `${newReceipt.vendor.toUpperCase()}|${newReceipt.date}|${newReceipt.total}`;
+      
+      let isDupe = false;
+      setReceipts(prev => {
+        const dupe = prev.find(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}` === signature);
+        if (dupe) {
+          isDupe = true;
+          return prev;
+        }
+        return [newReceipt, ...prev];
+      });
+
+      if (isDupe) {
+        setStatusText(`${prefix}Aynı fiş zaten mevcut, atlandı.`);
+        return;
+      }
+      
       setDashboardMonth("Hepsi"); 
       setActiveTab('dashboard');
     } catch (err: any) {
