@@ -382,6 +382,56 @@ export const BudgetManager: React.FC<Props> = ({
         animate={{ opacity: 1, y: 0 }}
         className="no-print space-y-4"
       >
+        <div className="bg-white dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-900 shadow-sm overflow-hidden mb-1">
+          <table className="w-full text-left table-fixed">
+            <thead className="bg-slate-50 dark:bg-slate-900/40 text-[9px] font-medium text-slate-400 uppercase tracking-widest border-b dark:border-slate-900">
+              <tr>
+                <th className="px-3 py-1.5 w-4/12">KAT</th>
+                <th className="px-1 py-1.5 text-right w-4/12">LİMİT</th>
+                <th className="px-1 py-1.5 text-right w-4/12 pr-3">KALAN</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-900">
+              {currentLimits.map((l) => {
+                const spent = spentPerCategory[l.category] || 0;
+                const remaining = l.limit - spent;
+                const isEditing = editingLimitCategory === l.category;
+                
+                return (
+                  <tr key={l.category} className="text-[11px] dark:text-slate-400 group hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                    <td className="px-3 py-1.5 font-medium truncate uppercase tracking-tight text-slate-800 dark:text-slate-200">{l.category}</td>
+                    <td 
+                      className="px-1 py-1.5 text-right cursor-pointer" 
+                      onClick={() => setEditingLimitCategory(l.category)}
+                    >
+                      {isEditing ? (
+                        <div className="flex items-center justify-end">
+                          <input 
+                            autoFocus
+                            type="number" 
+                            value={l.limit || ''} 
+                            onBlur={() => setEditingLimitCategory(null)}
+                            onChange={e => handleLimitChange(l.category, e.target.value)} 
+                            onKeyDown={e => e.key === 'Enter' && setEditingLimitCategory(null)}
+                            className="w-full bg-slate-50 dark:bg-slate-800 border-none text-right text-[12px] font-medium text-indigo-500 outline-none rounded px-1 py-0.5 shadow-inner font-display" 
+                            placeholder="0" 
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-[12px] font-medium text-indigo-500 tabular-nums font-display group-hover:underline decoration-indigo-200">
+                          {l.limit.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[10px] ml-0.5 opacity-50">₺</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className={`px-1 py-1.5 pr-3 text-right font-medium tabular-nums font-display ${remaining < 0 ? 'text-rose-500' : 'text-slate-900 dark:text-slate-100'}`}>
+                      {remaining.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[10px] ml-0.5 opacity-40 text-slate-400">₺</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         <motion.div 
           whileHover={{ scale: 1.005 }}
