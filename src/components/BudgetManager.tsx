@@ -18,6 +18,7 @@ import { getCategoryColor } from './ReceiptTable.tsx';
 import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 interface Props {
   receipts: ReceiptData[];
@@ -207,6 +208,50 @@ export const BudgetManager: React.FC<Props> = ({
     setManualForm({ ...manualForm, konu: '', market: '', ucret: '' });
   };
 
+  const exportToExcel = () => {
+    const monthName = selectedMonth === "Hepsi" ? "Tüm Zamanlar" : activeMonthKey;
+    const dateStr = new Date().toLocaleDateString('tr-TR');
+
+    // Create worksheet data
+    const worksheetData = [
+      ["BÜTÇE RAPORU"],
+      ["Dönem:", monthName],
+      ["Oluşturulma Tarihi:", dateStr],
+      [],
+      ["ÖZET"],
+      ["Toplam Harcama:", `${categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺`],
+      ["Seçili Kategori:", selectedCategory],
+      ["Fiş Sayısı:", filteredReceipts.length],
+      [],
+      ["HARCAMA DETAYLARI"],
+      ["Tarih", "Mağaza", "Kategori", "Tutar (₺)"]
+    ];
+
+    filteredReceipts.forEach(r => {
+      worksheetData.push([
+        formatDateForDisplay(r.date),
+        r.vendor.toUpperCase(),
+        r.category.toUpperCase(),
+        r.total
+      ]);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Harcama Raporu");
+
+    // Auto-size columns
+    const colWidths = [
+      { wch: 15 }, // Tarih
+      { wch: 30 }, // Mağaza
+      { wch: 20 }, // Kategori
+      { wch: 15 }  // Tutar
+    ];
+    worksheet['!cols'] = colWidths;
+
+    XLSX.writeFile(workbook, `Butce_Raporu_${monthName.replace(' ', '_')}.xlsx`);
+  };
+
   const exportToPDF = async () => {
     const input = document.getElementById('budget-content');
     if (!input) return;
@@ -250,37 +295,6 @@ export const BudgetManager: React.FC<Props> = ({
           <p style="font-size: 10px; color: #64748b; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">FİŞ SAYISI</p>
           <p style="font-size: 24px; font-weight: 900; color: #1e1b4b; margin: 0;">${filteredReceipts.length}</p>
         </div>
-      </div>
-
-      <div style="margin-bottom: 40px;">
-        <h2 style="font-size: 14px; font-weight: 800; color: #1e1b4b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;">
-          <span style="width: 4px; height: 16px; background: #4f46e5; border-radius: 2px;"></span>
-          BÜTÇE DURUMU
-        </h2>
-        <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
-          <thead>
-            <tr style="text-align: left;">
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">KATEGORİ</th>
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">LİMİT</th>
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">HARCANAN</th>
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">KALAN</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${currentLimits.map(l => {
-              const spent = spentPerCategory[l.category] || 0;
-              const remaining = l.limit - spent;
-              return `
-                <tr style="background: #ffffff; border: 1px solid #e2e8f0;">
-                  <td style="padding: 12px; font-size: 12px; font-weight: 700; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0; border-top-left-radius: 8px; border-bottom-left-radius: 8px;">${l.category.toUpperCase()}</td>
-                  <td style="padding: 12px; font-size: 12px; font-weight: 600; text-align: right; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">${l.limit.toLocaleString('tr-TR')}₺</td>
-                  <td style="padding: 12px; font-size: 12px; font-weight: 600; text-align: right; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">${spent.toLocaleString('tr-TR')}₺</td>
-                  <td style="padding: 12px; font-size: 12px; font-weight: 800; text-align: right; color: ${remaining < 0 ? '#ef4444' : '#10b981'}; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-top-right-radius: 8px; border-bottom-right-radius: 8px;">${remaining.toLocaleString('tr-TR')}₺</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
       </div>
 
       <div>
@@ -352,7 +366,12 @@ export const BudgetManager: React.FC<Props> = ({
           </select>
         </div>
         <div className="flex gap-1">
-          <button onClick={exportToPDF} className="p-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 rounded-lg border border-emerald-100 dark:border-emerald-900/30"><FileDown size={14} /></button>
+          <button onClick={exportToPDF} className="p-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 rounded-lg border border-rose-100 dark:border-rose-900/30 flex items-center gap-1">
+            <FileDown size={14} /> <span className="text-[10px] font-bold">PDF</span>
+          </button>
+          <button onClick={exportToExcel} className="p-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 rounded-lg border border-emerald-100 dark:border-emerald-900/30 flex items-center gap-1">
+            <FileDown size={14} /> <span className="text-[10px] font-bold">EXCEL</span>
+          </button>
           <button onClick={() => setShowTransfer(true)} className="p-1.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 rounded-lg border border-indigo-100 dark:border-indigo-900/30"><Repeat size={14} /></button>
           <button onClick={() => setShowManageCategories(true)} className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded-lg border border-slate-200 dark:border-slate-700"><Settings size={14} /></button>
         </div>
@@ -363,56 +382,6 @@ export const BudgetManager: React.FC<Props> = ({
         animate={{ opacity: 1, y: 0 }}
         className="no-print space-y-4"
       >
-        <div className="bg-white dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-900 shadow-sm overflow-hidden mb-1">
-          <table className="w-full text-left table-fixed">
-            <thead className="bg-slate-50 dark:bg-slate-900/40 text-[9px] font-medium text-slate-400 uppercase tracking-widest border-b dark:border-slate-900">
-              <tr>
-                <th className="px-3 py-1.5 w-4/12">KAT</th>
-                <th className="px-1 py-1.5 text-right w-4/12">LİMİT</th>
-                <th className="px-1 py-1.5 text-right w-4/12 pr-3">KALAN</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-900">
-              {currentLimits.map((l) => {
-                const spent = spentPerCategory[l.category] || 0;
-                const remaining = l.limit - spent;
-                const isEditing = editingLimitCategory === l.category;
-                
-                return (
-                  <tr key={l.category} className="text-[11px] dark:text-slate-400 group hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
-                    <td className="px-3 py-1.5 font-medium truncate uppercase tracking-tight text-slate-800 dark:text-slate-200">{l.category}</td>
-                    <td 
-                      className="px-1 py-1.5 text-right cursor-pointer" 
-                      onClick={() => setEditingLimitCategory(l.category)}
-                    >
-                      {isEditing ? (
-                        <div className="flex items-center justify-end">
-                          <input 
-                            autoFocus
-                            type="number" 
-                            value={l.limit || ''} 
-                            onBlur={() => setEditingLimitCategory(null)}
-                            onChange={e => handleLimitChange(l.category, e.target.value)} 
-                            onKeyDown={e => e.key === 'Enter' && setEditingLimitCategory(null)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border-none text-right text-[12px] font-medium text-indigo-500 outline-none rounded px-1 py-0.5 shadow-inner font-display" 
-                            placeholder="0" 
-                          />
-                        </div>
-                      ) : (
-                        <div className="text-[12px] font-medium text-indigo-500 tabular-nums font-display group-hover:underline decoration-indigo-200">
-                          {l.limit.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[10px] ml-0.5 opacity-50">₺</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className={`px-1 py-1.5 pr-3 text-right font-medium tabular-nums font-display ${remaining < 0 ? 'text-rose-500' : 'text-slate-900 dark:text-slate-100'}`}>
-                      {remaining.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}<span className="text-[10px] ml-0.5 opacity-40 text-slate-400">₺</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
 
         <motion.div 
           whileHover={{ scale: 1.005 }}
