@@ -1,6 +1,6 @@
 {
   "name": "FişAI - Akıllı Fiş Takibi",
-  "description": "Gemini AI destekli, bütçe yönetimli akıllı fiş tarama uygulaması.",
+  "description": "Gemini AI destekli, çoklu seçim ve Excel raporlama özellikli akıllı fiş tarama uygulaması.",
   "requestFramePermissions": [
     "camera"
   ]

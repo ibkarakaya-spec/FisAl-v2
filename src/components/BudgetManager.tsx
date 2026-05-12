@@ -224,16 +224,33 @@ export const BudgetManager: React.FC<Props> = ({
       ["Fiş Sayısı:", filteredReceipts.length],
       [],
       ["HARCAMA DETAYLARI"],
-      ["Tarih", "Mağaza", "Kategori", "Tutar (₺)"]
+      ["Tarih", "Mağaza", "Kategori", "Fiş Toplam (₺)", "Ürün Adı", "Ürün Fiyatı (₺)", "Adet"]
     ];
 
     filteredReceipts.forEach(r => {
-      worksheetData.push([
-        formatDateForDisplay(r.date),
-        r.vendor.toUpperCase(),
-        r.category.toUpperCase(),
-        r.total
-      ]);
+      if (r.items && r.items.length > 0) {
+        r.items.forEach((item, idx) => {
+          worksheetData.push([
+            idx === 0 ? formatDateForDisplay(r.date) : "",
+            idx === 0 ? r.vendor.toUpperCase() : "",
+            idx === 0 ? r.category.toUpperCase() : "",
+            idx === 0 ? r.total : "",
+            item.name.toUpperCase(),
+            item.price,
+            item.quantity || 1
+          ]);
+        });
+      } else {
+        worksheetData.push([
+          formatDateForDisplay(r.date),
+          r.vendor.toUpperCase(),
+          r.category.toUpperCase(),
+          r.total,
+          "BİLİNMEYEN ÜRÜN",
+          r.total,
+          1
+        ]);
+      }
     });
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -245,7 +262,10 @@ export const BudgetManager: React.FC<Props> = ({
       { wch: 15 }, // Tarih
       { wch: 30 }, // Mağaza
       { wch: 20 }, // Kategori
-      { wch: 15 }  // Tutar
+      { wch: 15 }, // Fiş Toplam
+      { wch: 40 }, // Ürün Adı
+      { wch: 15 }, // Ürün Fiyatı
+      { wch: 10 }  // Adet
     ];
     worksheet['!cols'] = colWidths;
 
