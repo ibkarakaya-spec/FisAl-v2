@@ -18,7 +18,8 @@ import { getCategoryColor } from './ReceiptTable.tsx';
 import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface Props {
   receipts: ReceiptData[];
@@ -208,29 +209,62 @@ export const BudgetManager: React.FC<Props> = ({
     setManualForm({ ...manualForm, konu: '', market: '', ucret: '' });
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     const monthName = selectedMonth === "Hepsi" ? "Tüm Zamanlar" : activeMonthKey;
     const dateStr = new Date().toLocaleDateString('tr-TR');
 
-    // Create worksheet data
-    const worksheetData = [
-      ["BÜTÇE RAPORU"],
-      ["Dönem:", monthName],
-      ["Oluşturulma Tarihi:", dateStr],
-      [],
-      ["ÖZET"],
-      ["Toplam Harcama:", `${categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺`],
-      ["Seçili Kategori:", selectedCategory],
-      ["Fiş Sayısı:", filteredReceipts.length],
-      [],
-      ["HARCAMA DETAYLARI"],
-      ["Tarih", "Mağaza", "Kategori", "Fiş Toplam (₺)", "Ürün Adı", "Ürün Fiyatı (₺)", "Adet"]
-    ];
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Harcama Raporu');
 
+    // Header Styles
+    const mainHeaderStyle: Partial<ExcelJS.Style> = {
+      font: { name: 'Inter', size: 16, bold: true, color: { argb: 'FFFFFFFF' } },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } },
+      alignment: { vertical: 'middle', horizontal: 'center' }
+    };
+
+    const subHeaderStyle: Partial<ExcelJS.Style> = {
+      font: { name: 'Inter', size: 10, bold: true, color: { argb: 'FF1E1B4B' } },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } },
+      border: { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } }
+    };
+
+    const tableHeaderStyle: Partial<ExcelJS.Style> = {
+      font: { name: 'Inter', size: 10, bold: true, color: { argb: 'FFFFFFFF' } },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E1B4B' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      border: {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } }
+      }
+    };
+
+    // Title
+    worksheet.mergeCells('A1:G1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'BÜTÇE VE HARCAMA RAPORU';
+    titleCell.style = mainHeaderStyle;
+    worksheet.getRow(1).height = 40;
+
+    // Report Info
+    worksheet.addRow(['Rapor Dönemi:', monthName]);
+    worksheet.addRow(['Oluşturulma:', dateStr]);
+    worksheet.addRow(['Toplam Harcama:', `${categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺`]);
+    worksheet.addRow(['Seçili Kategori:', selectedCategory]);
+    worksheet.addRow([]);
+
+    // Data Table Headers
+    const headerRow = worksheet.addRow(['TARİH', 'MAĞAZA', 'KATEGORİ', 'FİŞ TOPLAM', 'ÜRÜN ADI', 'BİRİM FİYAT', 'ADET']);
+    headerRow.eachCell((cell) => {
+      cell.style = tableHeaderStyle;
+    });
+    worksheet.getRow(headerRow.number).height = 25;
+
+    // Data
     filteredReceipts.forEach(r => {
       if (r.items && r.items.length > 0) {
         r.items.forEach((item, idx) => {
-          worksheetData.push([
+          const row = worksheet.addRow([
             idx === 0 ? formatDateForDisplay(r.date) : "",
             idx === 0 ? r.vendor.toUpperCase() : "",
             idx === 0 ? r.category.toUpperCase() : "",
@@ -239,9 +273,21 @@ export const BudgetManager: React.FC<Props> = ({
             item.price,
             item.quantity || 1
           ]);
+
+          // Styling for rows
+          if (idx === 0) {
+            row.eachCell((cell, colNumber) => {
+              if (colNumber <= 4) cell.font = { bold: true };
+              cell.border = { top: { style: 'thin', color: { argb: 'FFF1F5F9' } } };
+            });
+          }
+          
+          // Number formatting
+          row.getCell(4).numFmt = '#,##0.00"₺"';
+          row.getCell(6).numFmt = '#,##0.00"₺"';
         });
       } else {
-        worksheetData.push([
+        const row = worksheet.addRow([
           formatDateForDisplay(r.date),
           r.vendor.toUpperCase(),
           r.category.toUpperCase(),
@@ -250,26 +296,25 @@ export const BudgetManager: React.FC<Props> = ({
           r.total,
           1
         ]);
+        row.getCell(4).numFmt = '#,##0.00"₺"';
+        row.getCell(6).numFmt = '#,##0.00"₺"';
+        row.font = { bold: true };
       }
     });
 
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Harcama Raporu");
-
-    // Auto-size columns
-    const colWidths = [
-      { wch: 15 }, // Tarih
-      { wch: 30 }, // Mağaza
-      { wch: 20 }, // Kategori
-      { wch: 15 }, // Fiş Toplam
-      { wch: 40 }, // Ürün Adı
-      { wch: 15 }, // Ürün Fiyatı
-      { wch: 10 }  // Adet
+    // Column Widths
+    worksheet.columns = [
+      { width: 15 }, // Tarih
+      { width: 25 }, // Mağaza
+      { width: 20 }, // Kategori
+      { width: 15 }, // Fiş Toplam
+      { width: 35 }, // Ürün Adı
+      { width: 15 }, // Birim Fiyat
+      { width: 10 }  // Adet
     ];
-    worksheet['!cols'] = colWidths;
 
-    XLSX.writeFile(workbook, `Butce_Raporu_${monthName.replace(' ', '_')}.xlsx`);
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Butce_Raporu_${monthName.replace(' ', '_')}.xlsx`);
   };
 
   const exportToPDF = async () => {
@@ -281,8 +326,8 @@ export const BudgetManager: React.FC<Props> = ({
     printContainer.style.position = 'fixed';
     printContainer.style.left = '-9999px';
     printContainer.style.top = '0';
-    printContainer.style.width = '800px';
-    printContainer.style.padding = '40px';
+    printContainer.style.width = '210mm'; // A4 width
+    printContainer.style.padding = '20mm';
     printContainer.style.background = '#ffffff';
     printContainer.style.color = '#000000';
     printContainer.style.fontFamily = 'Inter, sans-serif';
@@ -291,61 +336,80 @@ export const BudgetManager: React.FC<Props> = ({
     const monthName = selectedMonth === "Hepsi" ? "Tüm Zamanlar" : activeMonthKey;
 
     printContainer.innerHTML = `
-      <div style="border-bottom: 4px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+      <div style="border-bottom: 5px solid #1e1b4b; padding-bottom: 25px; margin-bottom: 35px; display: flex; justify-content: space-between; align-items: flex-end;">
         <div>
-          <h1 style="font-size: 32px; font-weight: 900; color: #1e1b4b; margin: 0; letter-spacing: -1px;">BÜTÇE RAPORU</h1>
-          <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${monthName}</p>
+          <h1 style="font-size: 36px; font-weight: 900; color: #1e1b4b; margin: 0; letter-spacing: -1.5px;">BÜTÇE RAPORU</h1>
+          <p style="font-size: 16px; color: #4f46e5; margin: 5px 0 0 0; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">${monthName}</p>
         </div>
         <div style="text-align: right;">
-          <p style="font-size: 10px; color: #94a3b8; margin: 0; font-weight: bold;">OLUŞTURULMA TARİHİ</p>
-          <p style="font-size: 14px; color: #1e1b4b; margin: 0; font-weight: 800;">${dateStr}</p>
+          <p style="font-size: 11px; color: #94a3b8; margin: 0; font-weight: 800; text-transform: uppercase;">RAPOR TARİHİ</p>
+          <p style="font-size: 16px; color: #1e1b4b; margin: 0; font-weight: 900;">${dateStr}</p>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px;">
-        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0;">
-          <p style="font-size: 10px; color: #64748b; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">TOPLAM HARCAMA</p>
-          <p style="font-size: 24px; font-weight: 900; color: #4f46e5; margin: 0;">${categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</p>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-bottom: 45px;">
+        <div style="background: #f8fafc; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; border-bottom: 4px solid #4f46e5;">
+          <p style="font-size: 11px; color: #64748b; margin: 0 0 10px 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">TOPLAM HARCAMA</p>
+          <p style="font-size: 28px; font-weight: 950; color: #1e1b4b; margin: 0; letter-spacing: -1px;">${categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</p>
         </div>
-        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0;">
-          <p style="font-size: 10px; color: #64748b; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">KATEGORİ</p>
-          <p style="font-size: 24px; font-weight: 900; color: #1e1b4b; margin: 0;">${selectedCategory}</p>
+        <div style="background: #f8fafc; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; border-bottom: 4px solid #1e1b4b;">
+          <p style="font-size: 11px; color: #64748b; margin: 0 0 10px 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">KATEGORİ</p>
+          <p style="font-size: 28px; font-weight: 950; color: #1e1b4b; margin: 0; letter-spacing: -1px;">${selectedCategory}</p>
         </div>
-        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0;">
-          <p style="font-size: 10px; color: #64748b; margin: 0 0 8px 0; font-weight: bold; text-transform: uppercase;">FİŞ SAYISI</p>
-          <p style="font-size: 24px; font-weight: 900; color: #1e1b4b; margin: 0;">${filteredReceipts.length}</p>
+        <div style="background: #f8fafc; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; border-bottom: 4px solid #10b981;">
+          <p style="font-size: 11px; color: #64748b; margin: 0 0 10px 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">FİŞ SAYISI</p>
+          <p style="font-size: 28px; font-weight: 950; color: #1e1b4b; margin: 0; letter-spacing: -1px;">${filteredReceipts.length}</p>
         </div>
       </div>
 
       <div>
-        <h2 style="font-size: 14px; font-weight: 800; color: #1e1b4b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;">
-          <span style="width: 4px; height: 16px; background: #4f46e5; border-radius: 2px;"></span>
-          HARCAMA DETAYLARI
+        <h2 style="font-size: 16px; font-weight: 900; color: #1e1b4b; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 12px;">
+          <span style="width: 6px; height: 20px; background: #4f46e5; border-radius: 3px;"></span>
+          HARCAMA VE ÜRÜN DETAYLARI
         </h2>
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
           <thead>
-            <tr style="text-align: left; border-bottom: 2px solid #e2e8f0;">
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">TARİH</th>
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">MAĞAZA</th>
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase;">KATEGORİ</th>
-              <th style="padding: 12px; font-size: 10px; color: #64748b; text-transform: uppercase; text-align: right;">TUTAR</th>
+            <tr style="text-align: left; background: #1e1b4b;">
+              <th style="padding: 15px; font-size: 11px; color: #ffffff; text-transform: uppercase; border-top-left-radius: 12px; font-weight: 800;">TARİH / MAĞAZA</th>
+              <th style="padding: 15px; font-size: 11px; color: #ffffff; text-transform: uppercase; font-weight: 800;">ÜRÜN / HİZMET</th>
+              <th style="padding: 15px; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: right; border-top-right-radius: 12px; font-weight: 800;">TUTAR</th>
             </tr>
           </thead>
           <tbody>
             ${filteredReceipts.map(r => `
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 12px; font-size: 11px; color: #64748b;">${formatDateForDisplay(r.date)}</td>
-                <td style="padding: 12px; font-size: 11px; font-weight: 700; color: #1e1b4b;">${r.vendor.toUpperCase()}</td>
-                <td style="padding: 12px; font-size: 10px;"><span style="background: #f1f5f9; padding: 2px 8px; border-radius: 10px; font-weight: 700; color: #475569;">${r.category.toUpperCase()}</span></td>
-                <td style="padding: 12px; font-size: 12px; font-weight: 800; text-align: right; color: #1e1b4b;">${r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</td>
+              <tr style="background: #f8fafc; border-top: 2px solid #ffffff;">
+                <td style="padding: 15px; vertical-align: top; width: 30%;">
+                  <div style="font-size: 10px; color: #64748b; font-weight: 700; margin-bottom: 4px;">${formatDateForDisplay(r.date)}</div>
+                  <div style="font-size: 13px; font-weight: 900; color: #1e1b4b; text-transform: uppercase;">${r.vendor}</div>
+                  <div style="margin-top: 6px;"><span style="background: #e2e8f0; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase;">${r.category}</span></div>
+                  <div style="margin-top: 8px; font-size: 14px; font-weight: 900; color: #4f46e5;">TOPLAM: ${r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺</div>
+                </td>
+                <td colspan="2" style="padding: 0; vertical-align: top;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tbody>
+                      ${(r.items && r.items.length > 0 ? r.items : [{ name: 'BİLİNMEYEN ÜRÜN', price: r.total, quantity: 1 }]).map((item, idx) => `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                          <td style="padding: 12px 15px; font-size: 11px; color: #475569; font-weight: 600;">
+                            ${item.name.toUpperCase()} 
+                            <span style="color: #94a3b8; font-size: 9px; margin-left: 5px;">(X${item.quantity || 1})</span>
+                          </td>
+                          <td style="padding: 12px 15px; font-size: 11px; font-weight: 800; text-align: right; color: #1e1b4b; width: 100px;">
+                            ${item.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}₺
+                          </td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>
 
-      <div style="margin-top: 50px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
-        <p style="font-size: 10px; color: #94a3b8; font-weight: 600;">BU RAPOR OTOMATİK OLARAK OLUŞTURULMUŞTUR. © ${new Date().getFullYear()} AKILLI FİŞ YÖNETİMİ</p>
+      <div style="margin-top: 60px; text-align: center; border-top: 2px dashed #e2e8f0; padding-top: 30px;">
+        <p style="font-size: 11px; color: #94a3b8; font-weight: 700; letter-spacing: 1px;">BU RAPOR FİŞAI AKILLI TAKİP SİSTEMİ TARAFINDAN OLUŞTURULMUŞTUR.</p>
+        <p style="font-size: 10px; color: #cbd5e1; margin-top: 5px;">© ${new Date().getFullYear()} TÜM HAKLARI SAKLIDIR.</p>
       </div>
     `;
 
@@ -364,7 +428,21 @@ export const BudgetManager: React.FC<Props> = ({
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Multi-page logic
+      let heightLeft = pdfHeight;
+      let position = 0;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+
       pdf.save(`Butce_Raporu_${monthName.replace(' ', '_')}.pdf`);
     } finally {
       document.body.removeChild(printContainer);
