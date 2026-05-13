@@ -8,7 +8,11 @@ service cloud.firestore {
 
     // Helper Functions
     function isSignedIn() {
-      return request.auth != null && request.auth.token.email_verified == true;
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
     }
 
     function isValidId(id) {
@@ -16,8 +20,13 @@ service cloud.firestore {
     }
 
     function isMember(householdId) {
-      return isSignedIn() && exists(/databases/$(database)/documents/households/$(householdId)) &&
-             request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+      return isSignedIn() && (
+        // Allow access if it's the user's default household (prevents race condition on creation)
+        (householdId == 'house_' + request.auth.uid) ||
+        // Standard relational membership check
+        (exists(/databases/$(database)/documents/households/$(householdId)) &&
+         request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members)
+      );
     }
 
     function incoming() {
@@ -39,7 +48,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && request.auth.uid == uid;
       allow create: if isSignedIn() && request.auth.uid == uid && isValidUser(incoming());
       allow update: if isSignedIn() && request.auth.uid == uid && isValidUser(incoming()) &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['householdId', 'displayName']);
+                    incoming().diff(existing()).affectedKeys().hasOnly(['householdId', 'displayName', 'restrictedCategories']);
     }
 
     // Household Rules

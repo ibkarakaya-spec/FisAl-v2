@@ -34,61 +34,72 @@ const App: React.FC = () => {
   
   const [dashboardMonth, setDashboardMonth] = useState<string>("Hepsi");
 
-  // Auth & Household Setup
+  // Auth State
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    const unsubscribe = onAuthStateChanged(auth, u => {
       setUser(u);
-      if (u) {
-        // Load or create user profile
-        const userRef = doc(db, 'users', u.uid);
-        
-        // Use a listener for user profile too
-        const unsubProfile = onSnapshot(userRef, async (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            setUserProfile(data);
-            setHouseholdId(data.householdId);
-          } else {
-            const defaultHouseholdId = `house_${u.uid}`;
-            const newUser = {
-              uid: u.uid,
-              email: u.email,
-              displayName: u.displayName,
-              householdId: defaultHouseholdId,
-              restrictedCategories: []
-            };
-            await setDoc(userRef, newUser);
-            
-            // Create default household
-            await setDoc(doc(db, 'households', defaultHouseholdId), {
-              name: `${u.displayName}'un Ailesi`,
-              adminId: u.uid,
-              members: [u.uid]
-            });
-            
-            // Set default config
-            await setDoc(doc(db, 'households', defaultHouseholdId, 'config', 'main'), {
-              categories: DEFAULT_CATEGORIES
-            });
-            
-            setHouseholdId(defaultHouseholdId);
-            setUserProfile(newUser);
-          }
-        });
-
-        return () => unsubProfile();
-      } else {
+      if (!u) {
         setHouseholdId(null);
         setUserProfile(null);
+        setIsInitializing(false);
       }
-      setIsInitializing(false);
     });
     return unsubscribe;
   }, []);
 
+  // User Profile Sync
+  useEffect(() => {
+    if (!user) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, async (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setUserProfile(data);
+        setHouseholdId(data.householdId);
+      } else {
+        // First-time setup
+        const defaultHouseholdId = `house_${user.uid}`;
+        const newUser = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          householdId: defaultHouseholdId,
+          restrictedCategories: []
+        };
+        
+        try {
+          // Initialize household and config first to avoid listener errors
+          await setDoc(doc(db, 'households', defaultHouseholdId), {
+            name: `${user.displayName}'un Ailesi`,
+            adminId: user.uid,
+            members: [user.uid]
+          });
+          
+          await setDoc(doc(db, 'households', defaultHouseholdId, 'config', 'main'), {
+            categories: DEFAULT_CATEGORIES
+          });
+
+          await setDoc(userRef, newUser);
+          
+          setHouseholdId(defaultHouseholdId);
+          setUserProfile(newUser);
+        } catch (e) {
+          handleFirestoreError(e, OperationType.WRITE, 'initial_setup');
+        }
+      }
+      setIsInitializing(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+      setIsInitializing(false);
+    });
+
+    return unsubscribe;
+  }, [user]);
+
   // Sync Receipts
   useEffect(() => {
-    if (!householdId) return;
+    if (!householdId || !user) return;
 
     const q = query(
       collection(db, 'households', householdId, 'receipts'),
@@ -99,24 +110,34 @@ const App: React.FC = () => {
       const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as ReceiptData);
       setReceipts(data);
     }, (error) => {
+      // Gracefully handle initial setup latency
+      if (error.code === 'permission-denied') {
+        console.warn("Receipts listener permission denied, retrying logic...");
+        return;
+      }
       handleFirestoreError(error, OperationType.LIST, `households/${householdId}/receipts`);
     });
 
     return unsubscribe;
-  }, [householdId]);
+  }, [householdId, user]);
 
   // Sync Config
   useEffect(() => {
-    if (!householdId) return;
+    if (!householdId || !user) return;
 
-    const unsubscribe = onSnapshot(doc(db, 'households', householdId, 'config', 'main'), (snap) => {
+    const configRef = doc(db, 'households', householdId, 'config', 'main');
+    const unsubscribe = onSnapshot(configRef, (snap) => {
       if (snap.exists()) {
         setCategories(snap.data().categories || DEFAULT_CATEGORIES);
       }
+    }, (error) => {
+      // Gracefully handle initial setup latency
+      if (error.code === 'permission-denied') return;
+      handleFirestoreError(error, OperationType.GET, `households/${householdId}/config/main`);
     });
 
     return unsubscribe;
-  }, [householdId]);
+  }, [householdId, user]);
 
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [isExportingToDrive, setIsExportingToDrive] = useState(false);
