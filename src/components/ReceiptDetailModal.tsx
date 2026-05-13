@@ -102,21 +102,21 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
 
           <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-slate-900">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10">
-              <div className="flex items-center gap-2.5">
-                 <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl flex items-center justify-center text-indigo-600">
+              <div className="flex items-center gap-3">
+                 <div className="w-9 h-9 bg-brand/5 dark:bg-brand/10 rounded-xl flex items-center justify-center text-brand">
                     <ShoppingBag size={18} />
                  </div>
                  <div>
-                    <h3 className="text-xs font-medium text-slate-900 dark:text-white uppercase tracking-tight font-display">Kayıt <span className="text-indigo-600">Detayları</span></h3>
+                    <h3 className="text-[15px] font-serif italic font-medium text-slate-900 dark:text-white uppercase tracking-tight">Kayıt <span className="text-brand not-italic ml-0.5">Detayları</span></h3>
                     <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">ID: {receipt.id.slice(0, 8)}</p>
                  </div>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSave} 
-                  className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[9px] font-medium uppercase tracking-widest shadow-lg active:shadow-inner"
+                  className="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-medium uppercase tracking-widest shadow-lg"
                 >
                   Güncelle
                 </motion.button>
@@ -224,17 +224,18 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
               </section>
 
               <div className="pt-4 sticky bottom-0 bg-white dark:bg-slate-900 z-20 pb-4">
-                <div className="bg-indigo-600 rounded-[28px] p-6 text-white flex justify-between items-center shadow-2xl shadow-indigo-200 dark:shadow-none border border-white/10">
-                  <div className="flex flex-col">
+                <div className="bg-brand rounded-[28px] p-8 text-white flex justify-between items-center shadow-2xl shadow-brand/20 relative overflow-hidden group">
+                  <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors"></div>
+                  <div className="flex flex-col relative z-10">
                     <span className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-70 mb-1">Hesaplanan Toplam</span>
-                    <div className="text-3xl font-medium tabular-nums font-display">
-                      {editData.items.reduce((s, i) => s + (Number(i.price) || 0), 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-lg ml-1 opacity-50">₺</span>
+                    <div className="text-4xl font-medium tabular-nums flex items-baseline gap-1.5 font-display">
+                      {editData.items.reduce((s, i) => s + (Number(i.price) || 0), 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                      <span className="text-xl font-serif italic text-white/40">₺</span>
                     </div>
                   </div>
-                  <div className="h-12 w-px bg-white/10 hidden sm:block"></div>
-                  <div className="hidden sm:flex flex-col items-end">
+                  <div className="hidden sm:flex flex-col items-end relative z-10">
                      <span className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-70 mb-1">Durum</span>
-                     <div className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-medium uppercase tracking-widest">Doğrulandı</div>
+                     <div className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">Otomatik Doğrulandı</div>
                   </div>
                 </div>
               </div>

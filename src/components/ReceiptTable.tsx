@@ -160,62 +160,63 @@ export const ReceiptTable: React.FC<Props> = ({
           <motion.div 
             key={r.id} 
             variants={item}
-            whileHover={{ scale: 1.01, x: 2 }}
-            whileTap={{ scale: 0.99 }}
-            className={`group rounded-xl border p-1 flex items-center gap-2 transition-all cursor-pointer mb-0.5 ${
+            whileHover={{ scale: 1.005, y: -1 }}
+            whileTap={{ scale: 0.995 }}
+            className={`group rounded-2xl border py-3 px-4 flex items-center gap-4 transition-all cursor-pointer mb-2 ${
               isSelected 
-                ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' 
-                : 'bg-white dark:bg-slate-950/50 border-slate-100 dark:border-slate-900 hover:bg-slate-50 dark:hover:bg-slate-900'
+                ? 'bg-brand/5 border-brand/20 shadow-sm' 
+                : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)]'
             }`}
           >
             {onToggleSelect && (
               <div 
-                className="p-1 px-2 shrink-0"
+                className="shrink-0"
                 onClick={(e) => { e.stopPropagation(); onToggleSelect(r.id); }}
               >
-                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                  isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700'
+                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                  isSelected ? 'bg-brand border-brand scale-110 shadow-lg shadow-brand/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 group-hover:border-slate-300'
                 }`}>
                   {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                 </div>
               </div>
             )}
             
-            <div className="flex-1 flex items-center gap-2 min-w-0" onClick={() => onView(r)}>
+            <div className="flex-1 flex items-center gap-4 min-w-0" onClick={() => onView(r)}>
               <LogoIcon vendor={r.vendor} category={r.category} />
               
-              <div className="flex-1 min-w-0 flex items-center justify-between gap-1 pr-1">
+              <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 overflow-hidden">
-                    <span className="text-[13px] font-medium text-slate-950 dark:text-white truncate uppercase tracking-tight font-display leading-tight">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="text-[15px] font-serif italic font-medium text-slate-900 dark:text-white truncate uppercase tracking-tight leading-tight">
                       {r.vendor}
                     </span>
                     {r.imageUrl && (
-                      <div className="p-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded text-indigo-500 shrink-0">
-                        <ImageIcon size={8} />
+                      <div className="p-1 bg-brand/5 dark:bg-brand/10 rounded flex items-center justify-center text-brand shrink-0">
+                        <ImageIcon size={10} />
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 opacity-70">
-                    <span className="text-[9px] font-medium text-slate-500 tabular-nums shrink-0">{formatDateForDisplay(r.date)}</span>
-                    <span className={`text-[8px] font-medium px-1 rounded-sm border uppercase tracking-wider truncate inline-block ${getCategoryColor(r.category)}`}>
-                      {r.category.split(' ')[0]}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] font-medium text-slate-400 tabular-nums shrink-0">{formatDateForDisplay(r.date)}</span>
+                    <span className={`text-[9px] font-medium px-2 py-0.5 rounded-full border uppercase tracking-wider truncate inline-block ${getCategoryColor(r.category)}`}>
+                      {r.category}
                     </span>
                   </div>
                 </div>
                 
-                <div className="text-[14px] font-medium text-slate-950 dark:text-white tabular-nums font-display shrink-0 ml-1">
-                  {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} <span className="text-[10px] text-indigo-500">₺</span>
+                <div className="text-[17px] font-medium text-slate-900 dark:text-white tabular-nums font-display shrink-0 flex items-baseline gap-0.5">
+                  {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                  <span className="text-[12px] font-serif italic text-slate-300 dark:text-slate-600">₺</span>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity pr-1">
+            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all">
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete(r.id); }} 
-                className="p-1 text-slate-300 hover:text-red-500 dark:hover:text-red-400"
+                className="p-2 text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
               >
-                <Trash2 size={10} />
+                <Trash2 size={14} />
               </button>
             </div>
           </motion.div>
