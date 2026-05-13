@@ -33,5 +33,4 @@ export type ViewMode = 'standard' | 'detailed';
 export interface BudgetLimit {
   category: string;
   limit: number;
-  month: string;
 }

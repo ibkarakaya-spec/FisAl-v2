@@ -21,9 +21,6 @@ import html2canvas from 'html2canvas';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-import { doc, setDoc, onSnapshot, collection, deleteDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase.ts';
-
 interface Props {
   receipts: ReceiptData[];
   categories: string[];
@@ -37,9 +34,6 @@ interface Props {
   setSelectedMonth: (month: string) => void;
   selectedIds?: string[];
   onToggleSelect?: (id: string) => void;
-  onUpdateCategories: (cats: string[]) => void;
-  householdId?: string | null;
-  currentUser?: any;
 }
 
 export const BudgetManager: React.FC<Props> = ({ 
@@ -53,10 +47,7 @@ export const BudgetManager: React.FC<Props> = ({
   selectedMonth,
   setSelectedMonth,
   selectedIds = [],
-  onToggleSelect,
-  onUpdateCategories,
-  householdId,
-  currentUser
+  onToggleSelect
 }) => {
   const formatDateForDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -94,19 +85,8 @@ export const BudgetManager: React.FC<Props> = ({
   });
 
   useEffect(() => {
-    if (!householdId) return;
-    const q = collection(db, `households/${householdId}/limits`);
-    const unsub = onSnapshot(q, (snapshot) => {
-      const limits: Record<string, BudgetLimit[]> = {};
-      snapshot.docs.forEach(d => {
-        const data = d.data() as BudgetLimit;
-        if (!limits[data.month]) limits[data.month] = [];
-        limits[data.month].push(data);
-      });
-      setAllLimits(limits);
-    });
-    return unsub;
-  }, [householdId]);
+    localStorage.setItem('app_last_manual_date', manualForm.tarih);
+  }, [manualForm.tarih]);
 
   useEffect(() => {
     localStorage.setItem('budget_limits_by_month', JSON.stringify(allLimits));
@@ -179,68 +159,33 @@ export const BudgetManager: React.FC<Props> = ({
 
   const maxWeekly = useMemo(() => Math.max(...weeklyStats, 1), [weeklyStats]);
 
-  const handleLimitChange = async (category: string, value: string) => {
+  const handleLimitChange = (category: string, value: string) => {
     const numValue = parseFloat(value) || 0;
-    if (householdId) {
-      const limitId = `${activeMonthKey}_${category}`;
-      await setDoc(doc(db, `households/${householdId}/limits`, limitId), {
-        month: activeMonthKey,
-        category,
-        limit: numValue
-      });
-    } else {
-      const newLimits = currentLimits.map(l => l.category === category ? { ...l, limit: numValue } : l);
-      setAllLimits(prev => ({ ...prev, [activeMonthKey]: newLimits }));
-    }
+    const newLimits = currentLimits.map(l => l.category === category ? { ...l, limit: numValue } : l);
+    setAllLimits(prev => ({ ...prev, [activeMonthKey]: newLimits }));
   };
 
-  const handleDeleteCategory = async (catName: string) => {
+  const handleDeleteCategory = (catName: string) => {
     if (!confirm(`${catName} kategorisi silinsin mi?`)) return;
     const updatedCategories = categories.filter(c => c !== catName);
-    onUpdateCategories(updatedCategories);
-
-    if (householdId) {
-      // Logic for deleting shared limits could be added here
-      // but the current structure handles missing categories in currentLimits useMemo
-    } else {
-      const updatedAllLimits = { ...allLimits };
-      Object.keys(updatedAllLimits).forEach(month => {
-        updatedAllLimits[month] = (updatedAllLimits[month] || []).filter(l => l.category !== catName);
-      });
-      setAllLimits(updatedAllLimits);
-    }
+    setCategories(updatedCategories);
+    const updatedAllLimits = { ...allLimits };
+    Object.keys(updatedAllLimits).forEach(month => {
+      updatedAllLimits[month] = (updatedAllLimits[month] || []).filter(l => l.category !== catName);
+    });
+    setAllLimits(updatedAllLimits);
     if (selectedCategory === catName) setSelectedCategory('Hepsi');
   };
 
-  const handleTransfer = async () => {
+  const handleTransfer = () => {
     const amount = parseFloat(transferForm.amount) || 0;
     if (amount <= 0 || !transferForm.from || !transferForm.to) return;
-
-    if (householdId) {
-      const fromLimit = currentLimits.find(l => l.category === transferForm.from);
-      const toLimit = currentLimits.find(l => l.category === transferForm.to);
-      
-      const fromRef = doc(db, `households/${householdId}/limits`, `${activeMonthKey}_${transferForm.from}`);
-      const toRef = doc(db, `households/${householdId}/limits`, `${activeMonthKey}_${transferForm.to}`);
-      
-      await setDoc(fromRef, {
-        month: activeMonthKey,
-        category: transferForm.from,
-        limit: Math.max(0, (fromLimit?.limit || 0) - amount)
-      });
-      await setDoc(toRef, {
-        month: activeMonthKey,
-        category: transferForm.to,
-        limit: (toLimit?.limit || 0) + amount
-      });
-    } else {
-      const newLimits = currentLimits.map(l => {
-        if (l.category === transferForm.from) return { ...l, limit: Math.max(0, l.limit - amount) };
-        if (l.category === transferForm.to) return { ...l, limit: l.limit + amount };
-        return l;
-      });
-      setAllLimits(prev => ({ ...prev, [activeMonthKey]: newLimits }));
-    }
+    const newLimits = currentLimits.map(l => {
+      if (l.category === transferForm.from) return { ...l, limit: Math.max(0, l.limit - amount) };
+      if (l.category === transferForm.to) return { ...l, limit: l.limit + amount };
+      return l;
+    });
+    setAllLimits(prev => ({ ...prev, [activeMonthKey]: newLimits }));
     setShowTransfer(false);
     setTransferForm({ from: '', to: '', amount: '' });
   };
@@ -789,7 +734,7 @@ export const BudgetManager: React.FC<Props> = ({
             </div>
             <div className="flex gap-2">
               <input className="flex-1 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs font-medium outline-none" placeholder="Yeni Ad..." value={newCatName} onChange={e => setNewCatName(e.target.value)} />
-              <button onClick={() => { if(newCatName && !categories.includes(newCatName)) { onUpdateCategories([...categories, newCatName]); setNewCatName(""); } }} className="bg-indigo-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"><Plus size={24} /></button>
+              <button onClick={() => { if(newCatName && !categories.includes(newCatName)) { setCategories([...categories, newCatName]); setNewCatName(""); } }} className="bg-indigo-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"><Plus size={24} /></button>
             </div>
             <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {categories.map(cat => (

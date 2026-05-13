@@ -1,11 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2, Users, LogIn, LogOut, Copy, Check
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from './lib/firebase.ts';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
 import { ReceiptTable } from './components/ReceiptTable.tsx';
@@ -16,14 +13,7 @@ import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [householdId, setHouseholdId] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [showSyncSettings, setShowSyncSettings] = useState(false);
-  const [joinId, setJoinId] = useState('');
-  const [copyStatus, setCopyStatus] = useState(false);
-
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'prices' | 'budget'>('dashboard');
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [statusText, setStatusText] = useState<string>('');
@@ -195,136 +185,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Auth listener
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          const userSnap = await getDoc(userRef);
-          
-          if (userSnap.exists()) {
-            setHouseholdId(userSnap.data().householdId);
-          } else {
-            const newHouseholdId = `H-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-            await setDoc(userRef, {
-              email: user.email,
-              displayName: user.displayName,
-              householdId: newHouseholdId
-            });
-            await setDoc(doc(db, 'households', newHouseholdId), {
-              name: `${user.displayName} Haneli`,
-              ownerId: user.uid,
-              categories: categories
-            });
-            setHouseholdId(newHouseholdId);
-          }
-        } catch (err) {
-          console.error("Auth init error:", err);
-        }
-      } else {
-        setHouseholdId(null);
-      }
-      setIsInitializing(false);
-    });
-    return unsub;
-  }, []);
-
-  // Household receipts listener
-  useEffect(() => {
-    if (!householdId) return;
-    
-    const q = query(collection(db, `households/${householdId}/receipts`), orderBy('timestamp', 'desc'));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const cloudReceipts = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ReceiptData));
-      setReceipts(cloudReceipts);
-    }, (err) => console.error("Firestore Listen error:", err));
-    
-    return unsub;
-  }, [householdId]);
-
-  // Shared Categories listener
-  useEffect(() => {
-    if (!householdId) return;
-    const unsub = onSnapshot(doc(db, 'households', householdId), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.categories) setCategories(data.categories);
-      }
-    });
-    return unsub;
-  }, [householdId]);
-
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (err) {
-      alert("Giriş yapılamadı: " + (err as Error).message);
-    }
-  };
-
-  const handleJoinHousehold = async () => {
-    if (!currentUser || !joinId) return;
-    const cleanId = joinId.trim().toUpperCase();
-    try {
-      const hhSnap = await getDoc(doc(db, 'households', cleanId));
-      if (!hhSnap.exists()) {
-        alert("Geçersiz Hanelik Kodu!");
-        return;
-      }
-      await updateDoc(doc(db, 'users', currentUser.uid), { householdId: cleanId });
-      setHouseholdId(cleanId);
-      setShowSyncSettings(false);
-      setJoinId('');
-      alert("Haneliye başarıyla katıldınız!");
-    } catch (err) {
-      alert("Hata: " + (err as Error).message);
-    }
-  };
-
-  const handleLeaveHousehold = async () => {
-    if (!currentUser) return;
-    if (!confirm("Bu hanelikten ayrılmak istediğinizden emin misiniz?")) return;
-    try {
-      const newId = `H-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-      await setDoc(doc(db, 'households', newId), {
-        name: `${currentUser.displayName} Haneli`,
-        ownerId: currentUser.uid,
-        categories: categories
-      });
-      await updateDoc(doc(db, 'users', currentUser.uid), { householdId: newId });
-      setHouseholdId(newId);
-      alert("Yeni bir hanelik oluşturuldu.");
-    } catch (err) {
-      alert("Hata: " + (err as Error).message);
-    }
-  };
-
-  const syncLocalReceiptsToCloud = async () => {
-    if (!householdId || receipts.length === 0) return;
-    if (!confirm("Yerel verileriniz buluta yüklensin mi? (Kopyalar atlanır)")) return;
-    
-    setIsSyncing(true);
-    try {
-      const batchSize = 250;
-      for (let i = 0; i < receipts.length; i += batchSize) {
-        const batch = writeBatch(db);
-        const chunk = receipts.slice(i, i + batchSize);
-        chunk.forEach(r => {
-          const rRef = doc(db, `households/${householdId}/receipts`, r.id);
-          batch.set(rRef, { ...r, createdBy: currentUser?.uid });
-        });
-        await batch.commit();
-      }
-      alert("Senkronizasyon tamamlandı!");
-    } catch (err) {
-      alert("Senkronizasyon hatası: " + (err as Error).message);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
   const activeReceipts = useMemo(() => {
     const parseDateForSort = (dateStr: string) => {
       if (!dateStr) return '0000-00-00';
@@ -438,11 +298,7 @@ const App: React.FC = () => {
       setCategories(prev => {
         const normalizedCats = prev.map(c => c.trim().toUpperCase());
         if (!normalizedCats.includes(finalCategory.toUpperCase())) {
-          const updated = [...prev, finalCategory];
-          if (householdId) {
-            updateDoc(doc(db, 'households', householdId), { categories: updated });
-          }
-          return updated;
+          return [...prev, finalCategory];
         }
         return prev;
       });
@@ -463,19 +319,19 @@ const App: React.FC = () => {
       
       const signature = `${newReceipt.vendor.toUpperCase()}|${newReceipt.date}|${newReceipt.total}`;
       
-      const dupe = receipts.find(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}` === signature);
-      if (dupe) {
+      let isDupe = false;
+      setReceipts(prev => {
+        const dupe = prev.find(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}` === signature);
+        if (dupe) {
+          isDupe = true;
+          return prev;
+        }
+        return [newReceipt, ...prev];
+      });
+
+      if (isDupe) {
         setStatusText(`${prefix}Aynı fiş zaten mevcut, atlandı.`);
         return;
-      }
-
-      if (householdId) {
-        await setDoc(doc(db, `households/${householdId}/receipts`, newReceipt.id), {
-          ...newReceipt,
-          createdBy: currentUser?.uid
-        });
-      } else {
-        setReceipts(prev => [newReceipt, ...prev]);
       }
       
       setDashboardMonth("Hepsi"); 
@@ -542,15 +398,7 @@ const App: React.FC = () => {
       title: `${selectedIds.length} Kayıt Silinsin mi?`,
       message: "Seçilen tüm kayıtlar kalıcı olarak silinecektir.",
       onConfirm: () => {
-        if (householdId) {
-          const batch = writeBatch(db);
-          selectedIds.forEach(id => {
-            batch.delete(doc(db, `households/${householdId}/receipts`, id));
-          });
-          batch.commit();
-        } else {
-          setReceipts(prev => prev.filter(r => !selectedIds.includes(r.id)));
-        }
+        setReceipts(prev => prev.filter(r => !selectedIds.includes(r.id)));
         setSelectedIds([]);
       }
     });
@@ -789,31 +637,11 @@ const App: React.FC = () => {
                 setCategories={setCategories}
                 availableMonths={availableMonths} 
                 onAddReceipt={async (r) => {
-                  if (householdId) {
-                    await setDoc(doc(db, `households/${householdId}/receipts`, r.id), {
-                      ...r,
-                      createdBy: currentUser?.uid
-                    });
-                  } else {
-                    setReceipts(x => [r, ...x]);
-                  }
+                  setReceipts(x => [r, ...x]);
                 }}
                 onDeleteReceipt={async (id) => {
-                  if (householdId) {
-                    await deleteDoc(doc(db, `households/${householdId}/receipts`, id));
-                  } else {
-                    setReceipts(p => p.filter(r => r.id !== id));
-                  }
+                  setReceipts(p => p.filter(r => r.id !== id));
                 }}
-                onUpdateCategories={(cats) => {
-                  if (householdId) {
-                    updateDoc(doc(db, 'households', householdId), { categories: cats });
-                  } else {
-                    setCategories(cats);
-                  }
-                }}
-                householdId={householdId}
-                currentUser={currentUser}
                 onViewReceipt={setSelectedReceipt} 
                 selectedMonth={dashboardMonth}
                 setSelectedMonth={setDashboardMonth}
@@ -831,84 +659,6 @@ const App: React.FC = () => {
                   <button onClick={() => setShowSettings(false)} className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 font-medium"><X size={16} /></button>
                 </div>
                 <div className="space-y-3">
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users size={16} className="text-indigo-500" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider">Bulut Senkronizasyon</span>
-                      </div>
-                      {currentUser && (
-                        <button onClick={() => signOut(auth)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors">
-                          <LogOut size={16} />
-                        </button>
-                      )}
-                    </div>
-                    
-                    {!currentUser ? (
-                      <div className="space-y-2">
-                        <p className="text-[10px] text-slate-500 leading-relaxed font-medium">Eşinle veya diğer cihazlarınla anlık senkronize çalışmak için giriş yap.</p>
-                        <button 
-                          onClick={handleLogin}
-                          className="w-full py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
-                        >
-                          <LogIn size={14} className="text-indigo-600" /> Google ile Giriş Yap
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
-                          <img src={currentUser.photoURL || ''} className="w-8 h-8 rounded-full border border-indigo-100" />
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[11px] font-bold truncate">{currentUser.displayName}</span>
-                            <span className="text-[9px] text-slate-400 truncate tracking-tight">{currentUser.email}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Hanelik Kodu (Eşinle Paylaş)</label>
-                          <div className="flex gap-1.5">
-                            <div className="flex-1 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl text-xs font-bold font-mono tracking-wider border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-between">
-                              {householdId}
-                              <button 
-                                onClick={() => {
-                                  navigator.clipboard.writeText(householdId || '');
-                                  setCopyStatus(true);
-                                  setTimeout(() => setCopyStatus(false), 2000);
-                                }}
-                                className="text-indigo-400 hover:text-indigo-600 p-1"
-                              >
-                                {copyStatus ? <Check size={14} /> : <Copy size={14} />}
-                              </button>
-                            </div>
-                            <button 
-                              onClick={() => setShowSyncSettings(true)}
-                              className="px-3 bg-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase"
-                            >
-                              KATIL
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <button 
-                            disabled={isSyncing}
-                            onClick={syncLocalReceiptsToCloud}
-                            className="py-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-indigo-100 dark:border-indigo-800 flex items-center justify-center gap-1.5"
-                          >
-                            {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <CloudIcon size={12} />}
-                            Buluta Yükle
-                          </button>
-                          <button 
-                            onClick={handleLeaveHousehold}
-                            className="py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-slate-200 dark:border-slate-700"
-                          >
-                            AYRIL
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
                   <div className="grid grid-cols-2 gap-2.5">
                     <button onClick={() => importInputRef.current?.click()} className="py-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-indigo-100">İçe Aktar</button>
                     <button onClick={handleExportData} className="py-3 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-emerald-100">Cihaza Kaydet</button>
@@ -942,13 +692,7 @@ const App: React.FC = () => {
               receipt={selectedReceipt} 
               categories={categories}
               onClose={() => setSelectedReceipt(null)} 
-              onUpdate={async (u) => {
-                if (householdId) {
-                  await setDoc(doc(db, `households/${householdId}/receipts`, u.id), u);
-                } else {
-                  setReceipts(r => r.map(x => x.id === u.id ? u : x));
-                }
-              }} 
+              onUpdate={u => setReceipts(r => r.map(x => x.id === u.id ? u : x))} 
             />
           )}
 
@@ -992,45 +736,6 @@ const App: React.FC = () => {
             </div>
           </nav>
           <input type="file" ref={fileInputRef} onChange={handleCapture} accept="image/*" multiple className="hidden" />
-
-          {showSyncSettings && (
-            <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-6">
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="bg-white dark:bg-slate-900 w-full max-w-xs rounded-[32px] p-8 shadow-2xl space-y-6"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Users size={18} className="text-indigo-600" />
-                    <h3 className="text-sm font-bold uppercase tracking-tight">Haneliye Katıl</h3>
-                  </div>
-                  <X size={20} className="text-slate-400 cursor-pointer" onClick={() => setShowSyncSettings(false)} />
-                </div>
-                
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  Eşinin hanelik kodunu buraya yapıştırarak onunla anlık senkronize çalışmaya başlayabilirsin.
-                </p>
-
-                <div className="space-y-4">
-                  <input 
-                    value={joinId}
-                    onChange={e => setJoinId(e.target.value.toUpperCase())}
-                    placeholder="H-XXXXX"
-                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-4 text-center font-mono text-lg font-bold tracking-widest outline-none focus:border-indigo-500 transition-colors"
-                  />
-                  
-                  <button 
-                    onClick={handleJoinHousehold}
-                    disabled={!joinId}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-2xl text-[12px] font-bold uppercase tracking-widest shadow-xl shadow-indigo-200 dark:shadow-none transition-all active:scale-95"
-                  >
-                    HANELİYE KATIL
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
         </>
       )}
     </div>
