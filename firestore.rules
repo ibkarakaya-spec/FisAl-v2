@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Auth helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getHouseholdId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.householdId;
+    }
+
+    function isHouseholdMember(householdId) {
+      return isSignedIn() && getHouseholdId() == householdId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Entity Validations
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'householdId']) &&
+             data.email is string && data.email.size() <= 200 &&
+             data.householdId is string && data.householdId.size() <= 128;
+    }
+
+    function isValidHousehold(data) {
+      return data.keys().hasAll(['ownerId', 'categories']) &&
+             data.ownerId == request.auth.uid &&
+             data.categories is list && data.categories.size() <= 50;
+    }
+
+    function isValidReceipt(data) {
+      return data.vendor is string && data.vendor.size() <= 100 &&
+             data.total is number && data.total >= 0 &&
+             data.category is string &&
+             data.timestamp is number;
+    }
+
+    function isValidLimit(data) {
+      return data.month is string && data.month.matches('^\\d{4}-\\d{2}$') &&
+             data.category is string &&
+             data.limit is number && data.limit >= 0;
+    }
+
+    // User Profile
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'householdId']);
+    }
+
+    // Households
+    match /households/{householdId} {
+      allow get: if isHouseholdMember(householdId);
+      allow create: if isSignedIn() && isValidId(householdId) && isValidHousehold(request.resource.data);
+      allow update: if isHouseholdMember(householdId) && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categories', 'name']) &&
+                      request.resource.data.categories is list;
+
+      // Receipts
+      match /receipts/{receiptId} {
+        allow list: if isHouseholdMember(householdId);
+        allow get: if isHouseholdMember(householdId);
+        allow create: if isHouseholdMember(householdId) && isValidReceipt(request.resource.data);
+        allow update: if isHouseholdMember(householdId) && isValidReceipt(request.resource.data);
+        allow delete: if isHouseholdMember(householdId);
+      }
+
+      // Limits
+      match /limits/{limitId} {
+        allow list: if isHouseholdMember(householdId);
+        allow get: if isHouseholdMember(householdId);
+        allow write: if isHouseholdMember(householdId) && isValidLimit(request.resource.data);
+      }
+    }
+  }
+}
