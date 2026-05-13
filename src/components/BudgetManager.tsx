@@ -24,8 +24,7 @@ import { saveAs } from 'file-saver';
 interface Props {
   receipts: ReceiptData[];
   categories: string[];
-  restrictedCategories?: string[];
-  setCategories: (categories: string[]) => Promise<void> | void;
+  setCategories: React.Dispatch<React.SetStateAction<string[]>>;
   availableMonths: string[];
   onAddReceipt: (receipt: ReceiptData) => void;
   onDeleteReceipt: (id: string) => void;
@@ -40,7 +39,6 @@ interface Props {
 export const BudgetManager: React.FC<Props> = ({ 
   receipts, 
   categories,
-  restrictedCategories = [],
   setCategories,
   availableMonths, 
   onAddReceipt, 
@@ -93,10 +91,6 @@ export const BudgetManager: React.FC<Props> = ({
   useEffect(() => {
     localStorage.setItem('budget_limits_by_month', JSON.stringify(allLimits));
   }, [allLimits]);
-
-  const visibleCategories = useMemo(() => {
-    return categories.filter(c => !restrictedCategories.includes(c));
-  }, [categories, restrictedCategories]);
 
   const activeMonthKey = selectedMonth === "Hepsi" ? availableMonths[0] : selectedMonth;
 
@@ -206,7 +200,7 @@ export const BudgetManager: React.FC<Props> = ({
       date: `${d}.${m}.${y}`,
       total: price,
       currency: '₺',
-      category: manualForm.kategori || visibleCategories[0] || categories[0],
+      category: manualForm.kategori || categories[0],
       tax: 0,
       items: [{ name: manualForm.konu.toUpperCase(), price, quantity: 1 }],
       confidence: 1,
@@ -547,7 +541,7 @@ export const BudgetManager: React.FC<Props> = ({
           </div>
           <div className="flex gap-1">
             <select className="flex-1 bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded-lg text-[10px] font-medium uppercase outline-none cursor-pointer" value={manualForm.kategori} onChange={e => setManualForm({...manualForm, kategori: e.target.value})}>
-              {visibleCategories.map(c => <option key={c} value={c}>{c}</option>)}
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <input type="date" className="flex-1 bg-slate-50 dark:bg-slate-900/50 px-2 py-1.5 rounded-lg text-[10px] font-medium outline-none" value={manualForm.tarih} onChange={e => setManualForm({...manualForm, tarih: e.target.value})} />
           </div>
@@ -576,7 +570,7 @@ export const BudgetManager: React.FC<Props> = ({
               >
                 HEPSİ
               </motion.button>
-              {visibleCategories.map(cat => (
+              {categories.map(cat => (
                 <motion.button 
                   whileTap={{ scale: 0.95 }}
                   key={cat} 
