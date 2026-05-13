@@ -18,6 +18,7 @@ import { ConfirmModal } from './components/ConfirmModal.tsx';
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [household, setHousehold] = useState<any>(null);
   const [householdId, setHouseholdId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'prices' | 'budget'>('dashboard');
@@ -57,6 +58,14 @@ const App: React.FC = () => {
         const data = snap.data();
         setUserProfile(data);
         setHouseholdId(data.householdId);
+        
+        // Fetch household details
+        const hUnsub = onSnapshot(doc(db, 'households', data.householdId), (hSnap) => {
+          if (hSnap.exists()) {
+            setHousehold(hSnap.data());
+          }
+        });
+        return () => hUnsub();
       } else {
         // First-time setup
         const defaultHouseholdId = `house_${user.uid}`;
@@ -856,6 +865,42 @@ const App: React.FC = () => {
                        </button>
                      </div>
                    </div>
+
+                  <div className="h-px bg-slate-100 dark:bg-slate-800"></div>
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Görünür Kategoriler</p>
+                    <p className="text-[8px] text-slate-400 mb-2">Seçili olmayan kategoriler bütçe ve fiş girişinde görünmez.</p>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto p-1 pr-2 custom-scrollbar">
+                      {categories.map(cat => {
+                        const isHidden = userProfile?.restrictedCategories?.includes(cat);
+                        return (
+                          <button 
+                            key={cat}
+                            onClick={async () => {
+                              const current = userProfile?.restrictedCategories || [];
+                              const next = isHidden 
+                                ? current.filter((c: string) => c !== cat)
+                                : [...current, cat];
+                              
+                              if (!user) return;
+                              await updateDoc(doc(db, 'users', user.uid), {
+                                restrictedCategories: next
+                              });
+                            }}
+                            className={`px-3 py-2 rounded-xl text-[10px] font-medium transition-all text-left truncate flex items-center justify-between ${
+                              isHidden 
+                                ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 line-through' 
+                                : 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300'
+                            }`}
+                          >
+                            {cat}
+                            {!isHidden && <Plus size={10} className="rotate-45" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   <div className="h-px bg-slate-100 dark:bg-slate-800"></div>
 
