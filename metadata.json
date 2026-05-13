@@ -1,5 +1,7 @@
 {
-  "name": "Bizim Planlar",
-  "description": "Eşinizle ortak işlerinizi yönetebileceğiniz, offline ve Google sync destekli iş takip uygulaması.",
-  "requestFramePermissions": []
+  "name": "FişAI - Akıllı Fiş Takibi",
+  "description": "Gemini AI destekli, çoklu seçim ve Excel raporlama özellikli akıllı fiş tarama uygulaması.",
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
