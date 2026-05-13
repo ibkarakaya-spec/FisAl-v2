@@ -317,7 +317,12 @@ const App: React.FC = () => {
       return true;
     });
 
-    return [...uniqueReceipts].sort((a, b) => {
+    const filtered = uniqueReceipts.filter(r => {
+      const isRestricted = userProfile?.restrictedCategories?.includes(r.category);
+      return !isRestricted;
+    });
+
+    return [...filtered].sort((a, b) => {
       const dateA = parseDateForSort(a.date);
       const dateB = parseDateForSort(b.date);
       if (dateA !== dateB) return dateB.localeCompare(dateA);
