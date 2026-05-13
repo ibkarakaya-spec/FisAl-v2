@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2, LogOut, UserPlus, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { auth, db, googleProvider, OperationType, handleFirestoreError } from './lib/firebase.ts';
+import { onAuthStateChanged, signInWithPopup, signOut, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, orderBy, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
 import { ReceiptTable } from './components/ReceiptTable.tsx';
@@ -13,18 +16,15 @@ import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
 
 const App: React.FC = () => {
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [householdId, setHouseholdId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'prices' | 'budget'>('dashboard');
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [statusText, setStatusText] = useState<string>('');
-  const [receipts, setReceipts] = useState<ReceiptData[]>(() => {
-    const saved = localStorage.getItem('fis_ai_receipts');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [categories, setCategories] = useState<string[]>(() => {
-    const saved = localStorage.getItem('app_categories');
-    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
-  });
+  const [receipts, setReceipts] = useState<ReceiptData[]>([]);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [selectedReceipt, setSelectedReceipt] = useState<ReceiptData | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem('app_theme') as ThemeMode) || 'system');
   const [showSettings, setShowSettings] = useState(false);
@@ -32,9 +32,91 @@ const App: React.FC = () => {
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
-  const [dashboardMonth, setDashboardMonth] = useState<string>(() => {
-    return localStorage.getItem('app_last_selected_month') || "Hepsi";
-  });
+  const [dashboardMonth, setDashboardMonth] = useState<string>("Hepsi");
+
+  // Auth & Household Setup
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        // Load or create user profile
+        const userRef = doc(db, 'users', u.uid);
+        
+        // Use a listener for user profile too
+        const unsubProfile = onSnapshot(userRef, async (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            setUserProfile(data);
+            setHouseholdId(data.householdId);
+          } else {
+            const defaultHouseholdId = `house_${u.uid}`;
+            const newUser = {
+              uid: u.uid,
+              email: u.email,
+              displayName: u.displayName,
+              householdId: defaultHouseholdId,
+              restrictedCategories: []
+            };
+            await setDoc(userRef, newUser);
+            
+            // Create default household
+            await setDoc(doc(db, 'households', defaultHouseholdId), {
+              name: `${u.displayName}'un Ailesi`,
+              adminId: u.uid,
+              members: [u.uid]
+            });
+            
+            // Set default config
+            await setDoc(doc(db, 'households', defaultHouseholdId, 'config', 'main'), {
+              categories: DEFAULT_CATEGORIES
+            });
+            
+            setHouseholdId(defaultHouseholdId);
+            setUserProfile(newUser);
+          }
+        });
+
+        return () => unsubProfile();
+      } else {
+        setHouseholdId(null);
+        setUserProfile(null);
+      }
+      setIsInitializing(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Sync Receipts
+  useEffect(() => {
+    if (!householdId) return;
+
+    const q = query(
+      collection(db, 'households', householdId, 'receipts'),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as ReceiptData);
+      setReceipts(data);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `households/${householdId}/receipts`);
+    });
+
+    return unsubscribe;
+  }, [householdId]);
+
+  // Sync Config
+  useEffect(() => {
+    if (!householdId) return;
+
+    const unsubscribe = onSnapshot(doc(db, 'households', householdId, 'config', 'main'), (snap) => {
+      if (snap.exists()) {
+        setCategories(snap.data().categories || DEFAULT_CATEGORIES);
+      }
+    });
+
+    return unsubscribe;
+  }, [householdId]);
 
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [isExportingToDrive, setIsExportingToDrive] = useState(false);
@@ -231,12 +313,6 @@ const App: React.FC = () => {
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     monthsSet.add(currentMonthKey);
 
-    if (now.getDate() >= 16) {
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const nextMonthKey = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
-      monthsSet.add(nextMonthKey);
-    }
-
     activeReceipts.forEach(r => {
       if (!r.date) return;
       if (r.date.includes('.')) {
@@ -252,21 +328,6 @@ const App: React.FC = () => {
   }, [activeReceipts]);
 
   useEffect(() => {
-    if (isInitializing) return;
-    try {
-      const dataToSave = JSON.stringify(receipts);
-      if (dataToSave.length > 4 * 1024 * 1024) {
-        const cleaned = receipts.map((r, idx) => idx > 10 ? { ...r, imageUrl: undefined } : r);
-        localStorage.setItem('fis_ai_receipts', JSON.stringify(cleaned));
-      } else {
-        localStorage.setItem('fis_ai_receipts', dataToSave);
-      }
-    } catch (e) {
-      console.error("Storage Error", e);
-    }
-  }, [receipts, isInitializing]);
-
-  useEffect(() => {
     const root = window.document.documentElement;
     const mode = theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
     if (mode === 'dark') root.classList.add('dark');
@@ -274,19 +335,53 @@ const App: React.FC = () => {
     localStorage.setItem('app_theme', theme);
   }, [theme]);
 
-  const resetEverything = () => {
-    localStorage.clear();
-    window.location.reload();
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (e) {
+      console.error("Login Error", e);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error("Logout Error", e);
+    }
+  };
+
+  const joinHousehold = async (targetId: string) => {
+    if (!user || !targetId) return;
+    try {
+      const houseRef = doc(db, 'households', targetId);
+      const houseSnap = await getDoc(houseRef);
+      if (!houseSnap.exists()) {
+        alert("Geçersiz Hane ID");
+        return;
+      }
+
+      await updateDoc(houseRef, {
+        members: arrayUnion(user.uid)
+      });
+      await updateDoc(doc(db, 'users', user.uid), {
+        householdId: targetId
+      });
+      setHouseholdId(targetId);
+      alert("Hane başarıyla paylaşıldı!");
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, `households/${targetId}`);
+    }
   };
 
   const processFile = async (file: File, index?: number, total?: number) => {
+    if (!householdId || !user) return;
     const prefix = total && total > 1 ? `[${(index || 0) + 1}/${total}] ` : '';
     try {
       setStatusText(`${prefix}Görsel İyileştiriliyor...`);
       const optimizedImg = await autoEnhance(file);
       
       setStatusText(`${prefix}Analiz Ediliyor...`);
-      // Mevcut kategorileri Gemini'ye gönderiyoruz
       const data = await extractReceiptData(optimizedImg, categories, (msg) => {
         setStatusText(`${prefix}${msg}`);
       });
@@ -294,17 +389,8 @@ const App: React.FC = () => {
       const rawCategory = data.category || categories[0] || 'Gıda ve Market';
       const finalCategory = rawCategory.trim();
       
-      // Kategori listede yoksa ekle (case-insensitive kontrol)
-      setCategories(prev => {
-        const normalizedCats = prev.map(c => c.trim().toUpperCase());
-        if (!normalizedCats.includes(finalCategory.toUpperCase())) {
-          return [...prev, finalCategory];
-        }
-        return prev;
-      });
-
-      const newReceipt: ReceiptData = {
-        id: Math.random().toString(36).substr(2, 9),
+      const newReceiptId = Math.random().toString(36).substr(2, 9);
+      const newReceipt: any = {
         vendor: (data.vendor || 'BİLİNMEYEN MAĞAZA').toUpperCase(),
         date: data.date || new Date().toLocaleDateString('tr-TR'),
         total: Number(data.total) || 0,
@@ -315,23 +401,20 @@ const App: React.FC = () => {
         confidence: 1,
         timestamp: Date.now(),
         imageUrl: optimizedImg,
+        householdId: householdId,
+        createdBy: user.uid
       };
       
-      const signature = `${newReceipt.vendor.toUpperCase()}|${newReceipt.date}|${newReceipt.total}`;
-      
-      let isDupe = false;
-      setReceipts(prev => {
-        const dupe = prev.find(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}` === signature);
-        if (dupe) {
-          isDupe = true;
-          return prev;
-        }
-        return [newReceipt, ...prev];
-      });
+      const receiptRef = doc(db, 'households', householdId, 'receipts', newReceiptId);
+      await setDoc(receiptRef, newReceipt);
 
-      if (isDupe) {
-        setStatusText(`${prefix}Aynı fiş zaten mevcut, atlandı.`);
-        return;
+      // Update categories in household config if new
+      const normalizedCats = categories.map(c => c.trim().toUpperCase());
+      if (!normalizedCats.includes(finalCategory.toUpperCase())) {
+        const configRef = doc(db, 'households', householdId, 'config', 'main');
+        await updateDoc(configRef, {
+          categories: arrayUnion(finalCategory)
+        });
       }
       
       setDashboardMonth("Hepsi"); 
@@ -397,9 +480,16 @@ const App: React.FC = () => {
       isOpen: true,
       title: `${selectedIds.length} Kayıt Silinsin mi?`,
       message: "Seçilen tüm kayıtlar kalıcı olarak silinecektir.",
-      onConfirm: () => {
-        setReceipts(prev => prev.filter(r => !selectedIds.includes(r.id)));
-        setSelectedIds([]);
+      onConfirm: async () => {
+        if (!householdId) return;
+        try {
+          for (const id of selectedIds) {
+            await deleteDoc(doc(db, 'households', householdId, 'receipts', id));
+          }
+          setSelectedIds([]);
+        } catch (e) {
+          handleFirestoreError(e, OperationType.DELETE, `households/${householdId}/receipts`);
+        }
       }
     });
   };
@@ -427,6 +517,34 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex flex-col items-center justify-center">
           <Loader2 className="animate-spin text-indigo-600 mb-4" size={32} />
           <h1 className="text-xs font-medium uppercase tracking-widest opacity-40">FişAI Yükleniyor...</h1>
+        </div>
+      ) : !user ? (
+        <div className="fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-full max-w-sm space-y-8"
+          >
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-indigo-600/30">
+                <ScanText size={32} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">FişAI Akıllı Takip</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">Bütçenizi yönetin, harcamalarınıza hükmedin.</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleLogin}
+              className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-4 rounded-2xl flex items-center justify-center gap-3 border border-slate-200 dark:border-slate-800 shadow-sm hover:bg-slate-50 transition-all font-medium"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+              Google ile Giriş Yap
+            </button>
+
+            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">Cihazlar Arası Senkronizasyon • Güvenli Bulut Yedekleme</p>
+          </motion.div>
         </div>
       ) : (
         <>
@@ -578,7 +696,19 @@ const App: React.FC = () => {
                         }
                         return rMonth === dashboardMonth;
                       })}
-                      onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 
+                      onDelete={id => setConfirmState({ 
+                        isOpen: true, 
+                        title: "Silinsin mi?", 
+                        message: "Bu kayıt kalıcı olarak kaldırılacak.", 
+                        onConfirm: async () => {
+                          if (!householdId) return;
+                          try {
+                            await deleteDoc(doc(db, 'households', householdId, 'receipts', id));
+                          } catch (e) {
+                            handleFirestoreError(e, OperationType.DELETE, `households/${householdId}/receipts/${id}`);
+                          }
+                        } 
+                      })} 
                       onView={setSelectedReceipt} 
                       onCopySingle={() => Promise.resolve(true)}
                       viewMode="standard" 
@@ -634,13 +764,26 @@ const App: React.FC = () => {
               <BudgetManager 
                 receipts={activeReceipts} 
                 categories={categories}
-                setCategories={setCategories}
+                restrictedCategories={userProfile?.restrictedCategories || []}
+                setCategories={async (newCats) => {
+                  if (!householdId) return;
+                  await updateDoc(doc(db, 'households', householdId, 'config', 'main'), {
+                    categories: newCats
+                  });
+                }}
                 availableMonths={availableMonths} 
                 onAddReceipt={async (r) => {
-                  setReceipts(x => [r, ...x]);
+                  if (!householdId || !user) return;
+                  const newId = Math.random().toString(36).substr(2, 9);
+                  await setDoc(doc(db, 'households', householdId, 'receipts', newId), {
+                    ...r,
+                    householdId,
+                    createdBy: user.uid
+                  });
                 }}
                 onDeleteReceipt={async (id) => {
-                  setReceipts(p => p.filter(r => r.id !== id));
+                  if (!householdId) return;
+                  await deleteDoc(doc(db, 'households', householdId, 'receipts', id));
                 }}
                 onViewReceipt={setSelectedReceipt} 
                 selectedMonth={dashboardMonth}
@@ -653,12 +796,48 @@ const App: React.FC = () => {
 
           {showSettings && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
-              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[24px] p-6 space-y-4 shadow-2xl border dark:border-slate-800">
+              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[24px] p-6 space-y-6 shadow-2xl border dark:border-slate-800">
                 <div className="flex justify-between items-center mb-1">
-                  <h3 className="text-[12px] font-medium text-slate-400 uppercase tracking-widest">Ayarlar</h3>
+                  <h3 className="text-[12px] font-medium text-slate-400 uppercase tracking-widest">Hesap ve Ayarlar</h3>
                   <button onClick={() => setShowSettings(false)} className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 font-medium"><X size={16} /></button>
                 </div>
-                <div className="space-y-3">
+
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center gap-4">
+                  <img src={user?.photoURL || ''} className="w-10 h-10 rounded-full" alt="Profile" />
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.displayName}</p>
+                    <p className="text-[10px] text-slate-500 lowercase truncate">{user?.email}</p>
+                  </div>
+                  <button onClick={handleLogout} className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors">
+                    <LogOut size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                   <div className="space-y-2">
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aile Paylaşımı</p>
+                     <div className="flex flex-col gap-2">
+                       <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl">
+                         <p className="text-[9px] text-indigo-500 font-bold uppercase mb-1">Hane Paylaşım Kodu</p>
+                         <p className="text-sm font-mono font-bold text-indigo-700 dark:text-indigo-300 select-all">{householdId}</p>
+                         <p className="text-[8px] text-indigo-400 mt-2">Eşiniz bu kodu kullanarak sizinle aynı bütçeyi yönetebilir.</p>
+                       </div>
+                       
+                       <button 
+                         onClick={() => {
+                           const code = prompt("Paylaşılacak Hane Kodu'nu giriniz:");
+                           if (code) joinHousehold(code);
+                         }}
+                         className="w-full py-3 flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[11px] font-bold uppercase tracking-widest"
+                       >
+                         <UserPlus size={14} />
+                         Farklı Haneye Katıl
+                       </button>
+                     </div>
+                   </div>
+
+                  <div className="h-px bg-slate-100 dark:bg-slate-800"></div>
+
                   <div className="grid grid-cols-2 gap-2.5">
                     <button onClick={() => importInputRef.current?.click()} className="py-3 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-indigo-100">İçe Aktar</button>
                     <button onClick={handleExportData} className="py-3 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-emerald-100">Cihaza Kaydet</button>
@@ -692,7 +871,15 @@ const App: React.FC = () => {
               receipt={selectedReceipt} 
               categories={categories}
               onClose={() => setSelectedReceipt(null)} 
-              onUpdate={u => setReceipts(r => r.map(x => x.id === u.id ? u : x))} 
+              onUpdate={async (u) => {
+                if (!householdId) return;
+                try {
+                  const { id, ...data } = u;
+                  await updateDoc(doc(db, 'households', householdId, 'receipts', id), data);
+                } catch (e) {
+                  handleFirestoreError(e, OperationType.UPDATE, `households/${householdId}/receipts/${u.id}`);
+                }
+              }} 
             />
           )}
 

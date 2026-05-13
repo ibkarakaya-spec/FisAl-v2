@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "householdId": { "type": "string" },
+        "displayName": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Household": {
+      "title": "Household",
+      "description": "A group of users sharing a budget",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "adminId": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "adminId", "members"]
+    },
+    "Receipt": {
+      "title": "Receipt",
+      "description": "Scanned or manually entered receipt data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vendor": { "type": "string" },
+        "date": { "type": "string" },
+        "total": { "type": "number" },
+        "currency": { "type": "string" },
+        "category": { "type": "string" },
+        "items": { "type": "array" },
+        "timestamp": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "householdId": { "type": "string" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "vendor", "date", "total", "category", "householdId", "createdBy"]
+    },
+    "AppConfig": {
+      "title": "AppConfig",
+      "description": "Configuration shared per household",
+      "type": "object",
+      "properties": {
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "budgetLimits": { "type": "array" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/households/{householdId}": {
+      "schema": "Household",
+      "description": "Groups for sharing data"
+    },
+    "/households/{householdId}/receipts/{receiptId}": {
+      "schema": "Receipt",
+      "description": "Receipts belonging to a household"
+    },
+    "/households/{householdId}/config/main": {
+      "schema": "AppConfig",
+      "description": "Shared configuration for a household"
+    }
+  }
+}
