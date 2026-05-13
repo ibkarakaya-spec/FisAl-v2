@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A task or job shared between spouses.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "groupId": { "type": "string" },
+        "memberUids": { "type": "array", "items": { "type": "string" } },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "category": { "type": "string" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "completed", "createdAt", "updatedAt", "groupId"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "A group of users (e.g., a family) sharing tasks.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "members", "ownerId"]
+    }
+  },
+  "firestore": {
+    "tasks": {
+      "schema": "Task",
+      "description": "Global collection of tasks."
+    },
+    "groups": {
+      "schema": "Group",
+      "description": "Shared groups."
+    }
+  }
+}
