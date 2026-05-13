@@ -371,10 +371,16 @@ const App: React.FC = () => {
   }, [theme]);
 
   const handleLogin = async () => {
+    if (!auth) {
+      alert("Firebase Auth başlatılamadı. Lütfen sayfayı yenileyin.");
+      return;
+    }
     try {
+      console.log("Login triggered");
       await signInWithPopup(auth, googleProvider);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Login Error", e);
+      alert("Giriş Hatası: " + (e.message || "Bilinmeyen hata"));
     }
   };
 
