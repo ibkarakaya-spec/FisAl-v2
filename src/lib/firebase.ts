@@ -1,11 +1,19 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth();
+// Use Vite's eager glob to safely and synchronously import the config if it exists
+const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+const configPath = '../../firebase-applet-config.json';
+const firebaseConfig: any = (configs[configPath] as any)?.default || {};
+
+if (Object.keys(firebaseConfig).length === 0) {
+  console.warn('Firebase config not found. Please ensure firebase-applet-config.json exists or environment variables are set.');
+}
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const db = getFirestore(app);
+export const auth = getAuth(app);
 
 export enum OperationType {
   CREATE = 'create',
