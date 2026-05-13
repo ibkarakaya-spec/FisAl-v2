@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [household, setHousehold] = useState<any>(null);
   const [householdId, setHouseholdId] = useState<string | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(() => localStorage.getItem('is_offline_mode') === 'true');
   const [isInitializing, setIsInitializing] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'prices' | 'budget'>('dashboard');
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
@@ -39,14 +40,47 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, u => {
       setUser(u);
-      if (!u) {
+      if (u) {
+        setIsOfflineMode(false);
+        localStorage.removeItem('is_offline_mode');
+      } else {
         setHouseholdId(null);
         setUserProfile(null);
-        setIsInitializing(false);
+        // Only set initializing to false if we aren't in offline mode
+        // If we ARE in offline mode, it will be handled by the office effect
+        if (localStorage.getItem('is_offline_mode') !== 'true') {
+          setIsInitializing(false);
+        }
       }
     });
     return unsubscribe;
   }, []);
+
+  // Offline Mode Loader
+  useEffect(() => {
+    if (isOfflineMode) {
+      const savedReceipts = localStorage.getItem('app_receipts');
+      if (savedReceipts) setReceipts(JSON.parse(savedReceipts));
+      
+      const savedCategories = localStorage.getItem('app_categories');
+      if (savedCategories) setCategories(JSON.parse(savedCategories));
+      
+      setIsInitializing(false);
+    }
+  }, [isOfflineMode]);
+
+  // Offline Persistence
+  useEffect(() => {
+    if (isOfflineMode) {
+      localStorage.setItem('app_receipts', JSON.stringify(receipts));
+    }
+  }, [receipts, isOfflineMode]);
+
+  useEffect(() => {
+    if (isOfflineMode) {
+      localStorage.setItem('app_categories', JSON.stringify(categories));
+    }
+  }, [categories, isOfflineMode]);
 
   // User Profile Sync
   useEffect(() => {
@@ -380,12 +414,26 @@ const App: React.FC = () => {
       await signInWithPopup(auth, googleProvider);
     } catch (e: any) {
       console.error("Login Error", e);
-      alert("Giriş Hatası: " + (e.message || "Bilinmeyen hata"));
+      if (e.code !== 'auth/popup-closed-by-user') {
+        alert("Giriş Hatası: " + (e.message || "Bilinmeyen hata"));
+      }
     }
+  };
+
+  const handleOfflineMode = () => {
+    setIsOfflineMode(true);
+    localStorage.setItem('is_offline_mode', 'true');
+    setIsInitializing(false);
   };
 
   const handleLogout = async () => {
     try {
+      if (isOfflineMode) {
+        setIsOfflineMode(false);
+        localStorage.removeItem('is_offline_mode');
+        setReceipts([]);
+        return;
+      }
       await signOut(auth);
     } catch (e) {
       console.error("Logout Error", e);
@@ -416,7 +464,7 @@ const App: React.FC = () => {
   };
 
   const processFile = async (file: File, index?: number, total?: number) => {
-    if (!householdId || !user) return;
+    if (!isOfflineMode && (!householdId || !user)) return;
     const prefix = total && total > 1 ? `[${(index || 0) + 1}/${total}] ` : '';
     try {
       setStatusText(`${prefix}Görsel İyileştiriliyor...`);
@@ -442,20 +490,31 @@ const App: React.FC = () => {
         confidence: 1,
         timestamp: Date.now(),
         imageUrl: optimizedImg,
-        householdId: householdId,
-        createdBy: user.uid
+        ...(isOfflineMode ? {} : {
+          householdId: householdId,
+          createdBy: user!.uid
+        })
       };
       
-      const receiptRef = doc(db, 'households', householdId, 'receipts', newReceiptId);
-      await setDoc(receiptRef, newReceipt);
+      if (isOfflineMode) {
+        setReceipts(prev => [newReceipt, ...prev]);
+        
+        const normalizedCats = categories.map(c => c.trim().toUpperCase());
+        if (!normalizedCats.includes(finalCategory.toUpperCase())) {
+          setCategories(prev => [...prev, finalCategory]);
+        }
+      } else {
+        const receiptRef = doc(db, 'households', householdId!, 'receipts', newReceiptId);
+        await setDoc(receiptRef, newReceipt);
 
-      // Update categories in household config if new
-      const normalizedCats = categories.map(c => c.trim().toUpperCase());
-      if (!normalizedCats.includes(finalCategory.toUpperCase())) {
-        const configRef = doc(db, 'households', householdId, 'config', 'main');
-        await updateDoc(configRef, {
-          categories: arrayUnion(finalCategory)
-        });
+        // Update categories in household config if new
+        const normalizedCats = categories.map(c => c.trim().toUpperCase());
+        if (!normalizedCats.includes(finalCategory.toUpperCase())) {
+          const configRef = doc(db, 'households', householdId!, 'config', 'main');
+          await updateDoc(configRef, {
+            categories: arrayUnion(finalCategory)
+          });
+        }
       }
       
       setDashboardMonth("Hepsi"); 
@@ -522,10 +581,14 @@ const App: React.FC = () => {
       title: `${selectedIds.length} Kayıt Silinsin mi?`,
       message: "Seçilen tüm kayıtlar kalıcı olarak silinecektir.",
       onConfirm: async () => {
-        if (!householdId) return;
+        if (!isOfflineMode && !householdId) return;
         try {
-          for (const id of selectedIds) {
-            await deleteDoc(doc(db, 'households', householdId, 'receipts', id));
+          if (isOfflineMode) {
+            setReceipts(prev => prev.filter(r => !selectedIds.includes(r.id)));
+          } else {
+            for (const id of selectedIds) {
+              await deleteDoc(doc(db, 'households', householdId!, 'receipts', id));
+            }
           }
           setSelectedIds([]);
         } catch (e) {
@@ -559,12 +622,12 @@ const App: React.FC = () => {
           <Loader2 className="animate-spin text-indigo-600 mb-4" size={32} />
           <h1 className="text-xs font-medium uppercase tracking-widest opacity-40">FişAI Yükleniyor...</h1>
         </div>
-      ) : !user ? (
+      ) : (!user && !isOfflineMode) ? (
         <div className="fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-sm space-y-8"
+            className="w-full max-w-sm space-y-6"
           >
             <div className="flex flex-col items-center gap-4">
               <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-indigo-600/30">
@@ -576,15 +639,33 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <button 
-              onClick={handleLogin}
-              className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-4 rounded-2xl flex items-center justify-center gap-3 border border-slate-200 dark:border-slate-800 shadow-sm hover:bg-slate-50 transition-all font-medium"
-            >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
-              Google ile Giriş Yap
-            </button>
+            <div className="space-y-3">
+              <button 
+                onClick={handleLogin}
+                className="w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-4 rounded-2xl flex items-center justify-center gap-3 border border-slate-200 dark:border-slate-800 shadow-sm hover:bg-slate-50 transition-all font-medium"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+                Google ile Giriş Yap
+              </button>
 
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em]">Cihazlar Arası Senkronizasyon • Güvenli Bulut Yedekleme</p>
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center px-4"><div className="w-full border-t border-slate-200 dark:border-slate-800"></div></div>
+                <div className="relative flex justify-center"><span className="bg-slate-50 dark:bg-slate-950 px-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">Veya</span></div>
+              </div>
+
+              <button 
+                onClick={handleOfflineMode}
+                className="w-full bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 py-4 rounded-2xl flex items-center justify-center gap-3 border border-indigo-100 dark:border-indigo-900/30 shadow-sm transition-all font-bold uppercase text-[12px] tracking-widest"
+              >
+                <HardDrive size={18} />
+                Offline Mod (Local)
+              </button>
+            </div>
+
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest leading-relaxed">
+              Bulut senkronizasyonu için giriş yapın <br />
+              Local modda veriler sadece bu cihazda saklanır
+            </p>
           </motion.div>
         </div>
       ) : (
@@ -601,6 +682,7 @@ const App: React.FC = () => {
               </motion.div>
               <h1 className="text-sm font-medium uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
                 Fiş<span className="text-indigo-600">AI</span>
+                {isOfflineMode && <span className="ml-1 text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full lowercase tracking-normal italic not-uppercase font-normal">local</span>}
               </h1>
             </div>
             <div className="flex items-center gap-2">
@@ -742,6 +824,10 @@ const App: React.FC = () => {
                         title: "Silinsin mi?", 
                         message: "Bu kayıt kalıcı olarak kaldırılacak.", 
                         onConfirm: async () => {
+                          if (isOfflineMode) {
+                            setReceipts(prev => prev.filter(r => r.id !== id));
+                            return;
+                          }
                           if (!householdId) return;
                           try {
                             await deleteDoc(doc(db, 'households', householdId, 'receipts', id));
@@ -807,6 +893,10 @@ const App: React.FC = () => {
                 categories={categories}
                 restrictedCategories={userProfile?.restrictedCategories || []}
                 setCategories={async (newCats) => {
+                  if (isOfflineMode) {
+                    setCategories(newCats);
+                    return;
+                  }
                   if (!householdId) return;
                   await updateDoc(doc(db, 'households', householdId, 'config', 'main'), {
                     categories: newCats
@@ -814,8 +904,12 @@ const App: React.FC = () => {
                 }}
                 availableMonths={availableMonths} 
                 onAddReceipt={async (r) => {
-                  if (!householdId || !user) return;
                   const newId = Math.random().toString(36).substr(2, 9);
+                  if (isOfflineMode) {
+                    setReceipts(prev => [{ ...r, id: newId }, ...prev]);
+                    return;
+                  }
+                  if (!householdId || !user) return;
                   await setDoc(doc(db, 'households', householdId, 'receipts', newId), {
                     ...r,
                     householdId,
@@ -823,6 +917,10 @@ const App: React.FC = () => {
                   });
                 }}
                 onDeleteReceipt={async (id) => {
+                  if (isOfflineMode) {
+                    setReceipts(prev => prev.filter(r => r.id !== id));
+                    return;
+                  }
                   if (!householdId) return;
                   await deleteDoc(doc(db, 'households', householdId, 'receipts', id));
                 }}
@@ -844,17 +942,28 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center gap-4">
-                  <img src={user?.photoURL || ''} className="w-10 h-10 rounded-full" alt="Profile" />
+                  {isOfflineMode ? (
+                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
+                      <HardDrive size={20} />
+                    </div>
+                  ) : (
+                    <img src={user?.photoURL || ''} className="w-10 h-10 rounded-full" alt="Profile" />
+                  )}
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.displayName}</p>
-                    <p className="text-[10px] text-slate-500 lowercase truncate">{user?.email}</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {isOfflineMode ? "Offline Mod" : user?.displayName}
+                    </p>
+                    <p className="text-[10px] text-slate-500 lowercase truncate">
+                      {isOfflineMode ? "Veriler cihazınızda" : user?.email}
+                    </p>
                   </div>
                   <button onClick={handleLogout} className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors">
                     <LogOut size={18} />
                   </button>
                 </div>
 
-                <div className="space-y-4">
+                {!isOfflineMode && (
+                  <div className="space-y-4">
                    <div className="space-y-2">
                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aile Paylaşımı</p>
                      <div className="flex flex-col gap-2">
@@ -894,6 +1003,10 @@ const App: React.FC = () => {
                                 ? current.filter((c: string) => c !== cat)
                                 : [...current, cat];
                               
+                              if (isOfflineMode) {
+                                setUserProfile(p => ({ ...p, restrictedCategories: next }));
+                                return;
+                              }
                               if (!user) return;
                               await updateDoc(doc(db, 'users', user.uid), {
                                 restrictedCategories: next
@@ -939,9 +1052,10 @@ const App: React.FC = () => {
 
                   <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
           {selectedReceipt && (
             <ReceiptDetailModal 
@@ -949,6 +1063,10 @@ const App: React.FC = () => {
               categories={categories}
               onClose={() => setSelectedReceipt(null)} 
               onUpdate={async (u) => {
+                if (isOfflineMode) {
+                  setReceipts(prev => prev.map(r => r.id === u.id ? { ...r, ...u } : r));
+                  return;
+                }
                 if (!householdId) return;
                 try {
                   const { id, ...data } = u;
