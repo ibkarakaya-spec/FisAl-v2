@@ -1,8 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, collection, onSnapshot, query, where, orderBy, addDoc, deleteDoc, getDocFromServer } from 'firebase/firestore';
-import localConfig from '../../firebase-applet-config.json';
+// Firebase configuration loader that works both in development (AI Studio) and production (Netlify/GitHub)
+// We use import.meta.glob to safely attempt to load the file if it exists without breaking the build if it doesn't.
+const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
+const localConfig = (Object.values(configs)[0] as any)?.default || {};
 
+// We try to use the environment variables first (for production)
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || localConfig.apiKey,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || localConfig.authDomain,
@@ -13,9 +17,10 @@ const firebaseConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || localConfig.firestoreDatabaseId,
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth(app);
+// Only initialize if we have at least a projectId (to avoid crashes if everything is missing)
+const app = firebaseConfig.projectId ? initializeApp(firebaseConfig) : null;
+export const db = app ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : (null as any);
+export const auth = app ? getAuth(app) : (null as any);
 export const googleProvider = new GoogleAuthProvider();
 
 export enum OperationType {
@@ -45,6 +50,7 @@ interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  if (!auth) return;
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {

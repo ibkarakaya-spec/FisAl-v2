@@ -64,6 +64,10 @@ const App: React.FC = () => {
       
       const savedCategories = localStorage.getItem('app_categories');
       if (savedCategories) setCategories(JSON.parse(savedCategories));
+
+      const savedProfile = localStorage.getItem('app_user_profile');
+      if (savedProfile) setUserProfile(JSON.parse(savedProfile));
+      else setUserProfile({ restrictedCategories: [] });
       
       setIsInitializing(false);
     }
@@ -81,6 +85,12 @@ const App: React.FC = () => {
       localStorage.setItem('app_categories', JSON.stringify(categories));
     }
   }, [categories, isOfflineMode]);
+
+  useEffect(() => {
+    if (isOfflineMode) {
+      localStorage.setItem('app_user_profile', JSON.stringify(userProfile));
+    }
+  }, [userProfile, isOfflineMode]);
 
   // User Profile Sync
   useEffect(() => {
@@ -423,6 +433,7 @@ const App: React.FC = () => {
   const handleOfflineMode = () => {
     setIsOfflineMode(true);
     localStorage.setItem('is_offline_mode', 'true');
+    setUserProfile({ restrictedCategories: [] }); // Default for offline mode
     setIsInitializing(false);
   };
 
