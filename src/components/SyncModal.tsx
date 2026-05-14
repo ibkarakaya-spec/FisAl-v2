@@ -432,17 +432,32 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       const errMsg = err?.message || String(err);
       if (mode === 'import' && !useFileFallback) {
         let message = "Kamera erişilemiyor. Lütfen izinleri kontrol edin veya resim seçerek tarayın.";
-        
+        let isPermissionError = false;
+
         if (errMsg.toLowerCase().includes("permission") || errMsg.toLowerCase().includes("notallowed")) {
-          message = "Kamera izni reddedildi. Lütfen tarayıcı adres çubuğundaki kilit simgesine tıklayarak kamera iznini aktif hale getirin.";
+          message = "Kamera izni reddedildi. Tarayıcı ayarlarından (adres çubuğundaki kilit simgesi) izin vermeniz gerekiyor.";
+          isPermissionError = true;
         } else if (errMsg.toLowerCase().includes("notfound") || errMsg.toLowerCase().includes("readable")) {
-          message = "Kamera bulunamadı veya başka bir uygulama tarafından kullanılıyor.";
+          message = "Kamera bulunamadı veya başka bir uygulama tarafından kullanılıyor olabilir.";
         }
 
         setSyncStatus({ 
           success: false, 
           message 
         });
+
+        // If it’s a permission or hardware error, automatically suggest file mode after 3 seconds
+        if (isPermissionError) {
+          setTimeout(() => {
+            if (mode === 'import') {
+              setUseFileFallback(true);
+              setSyncStatus({ 
+                success: false, 
+                message: "Kamera çalışmadığı için 'Resimden Aktar' moduna geçildi. Ekran görüntüsü seçerek devam edebilirsiniz." 
+              });
+            }
+          }, 4000);
+        }
       }
     } finally {
       isTransitioningRef.current = false;
