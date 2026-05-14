@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, QrCode, Scan, Download, Upload, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Image as ImageIcon, Camera, Share2 } from 'lucide-react';
+import { X, QrCode, Scan, Download, Upload, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Image as ImageIcon, Camera, Share2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReceiptData } from '../types';
 
@@ -92,7 +92,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       }
       
       // Split into chunks if too large (Sequential QR)
-      const CHUNK_SIZE = 1200;
+      const CHUNK_SIZE = 800;
       const chunks = [];
       for (let i = 0; i < fullData.length; i += CHUNK_SIZE) {
         chunks.push(fullData.substring(i, i + CHUNK_SIZE));
@@ -107,7 +107,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
   const isSequential = useMemo(() => {
     try {
-      return JSON.stringify(exportData).length > 2000;
+      return JSON.stringify(exportData).length > 1500;
     } catch (e) {
       return false;
     }
@@ -116,7 +116,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const totalExportChunks = useMemo(() => {
     try {
       const fullData = JSON.stringify(exportData);
-      return Math.ceil(fullData.length / 1200);
+      return Math.ceil(fullData.length / 800);
     } catch (e) {
       return 1;
     }
@@ -127,7 +127,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     if (mode === 'export' && isSequential) {
       const interval = setInterval(() => {
         setExportChunkIndex(prev => (prev + 1) % totalExportChunks);
-      }, 1500);
+      }, 1000); // Faster cycling for better pickup
       return () => clearInterval(interval);
     }
   }, [mode, isSequential, totalExportChunks]);
@@ -309,15 +309,24 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     if (!element) return;
 
     try {
+      if (scannerRef.current && scannerRef.current.isScanning()) {
+        await scannerRef.current.stop();
+      }
+      
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("qr-reader");
       }
 
       await scannerRef.current.start(
-        { facingMode: "environment" },
+        { facingMode: { ideal: "environment" } },
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
+          fps: 15,
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const qrboxSize = Math.floor(minEdge * 0.7);
+            return { width: qrboxSize, height: qrboxSize };
+          },
+          aspectRatio: 1.0
         },
         handleScanSuccess,
         () => {} // Ignore scan errors
@@ -327,18 +336,25 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     } catch (err) {
       console.error("Camera start error", err);
       setIsCameraActive(false);
-      setUseFileFallback(true);
-      setSyncStatus({ 
-        success: false, 
-        message: "Kamera başlatılamadı. İzinlerinizi kontrol edin veya resim seçerek tarayın." 
-      });
+      
+      // If native camera fails, automatically try to show file fallback 
+      // but only if it's a real failure, not a planned stop
+      if (mode === 'import') {
+        setUseFileFallback(true);
+        setSyncStatus({ 
+          success: false, 
+          message: "Kamera başlatılamadı. İzinlerinizi kontrol edin veya resim seçerek tarayın." 
+        });
+      }
     }
   };
 
   const stopScanner = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (scannerRef.current.isScanning()) {
+          await scannerRef.current.stop();
+        }
         setIsCameraActive(false);
       } catch (err) {
         console.error("Camera stop error", err);
@@ -595,6 +611,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                   
                   {!useFileFallback && (
                     <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          stopScanner();
+                          setTimeout(startScanner, 300);
+                        }}
+                        className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-400"
+                        title="Kamerayı Yenile"
+                      >
+                        <RefreshCw size={16} />
+                      </button>
                        <button 
                         onClick={handleClipboardImport}
                         className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-lg"
