@@ -798,7 +798,7 @@ const App: React.FC = () => {
               ))}
             </div>
           </nav>
-          <input type="file" ref={fileInputRef} onChange={handleCapture} accept="image/*" multiple className="hidden" />
+          <input type="file" ref={fileInputRef} onChange={handleCapture} accept="image/*" capture="environment" multiple className="hidden" />
         </>
       )}
     </div>

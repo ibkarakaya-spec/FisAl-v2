@@ -44,8 +44,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     let isMounted = true;
 
     if (mode === 'import') {
-      // Small delay to ensure the div with id="qr-reader" is in the DOM
-      // after the AnimatePresence transition
       const timer = setTimeout(() => {
         if (!isMounted) return;
         
@@ -77,12 +75,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
               setSyncStatus({ success: false, message: "QR kod okunamadı veya geçersiz veri içeriyor." });
             }
           }, (error) => {
-            // Handle scan failure
+            // Silently ignore regular scan failures to keep searching
           });
-        } catch (err) {
+        } catch (err: any) {
           console.error("Scanner initialization error", err);
+          setSyncStatus({ 
+            success: false, 
+            message: "Kamera başlatılamadı. Lütfen kamera izinlerini kontrol edin veya uygulamayı yeni sekmede açın." 
+          });
         }
-      }, 100);
+      }, 500); // Increased delay for smoother transitions
 
       return () => {
         isMounted = false;
@@ -249,6 +251,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
                 <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 px-4">
                   Eşinizin cihazındaki QR kodu kadrajın içine yerleştirin.
+                  {!syncStatus && (
+                    <span className="block mt-2 text-indigo-500 font-medium cursor-pointer hover:underline" onClick={() => window.open(window.location.href, '_blank')}>
+                      Kamera açılmıyorsa yeni sekmede deneyin →
+                    </span>
+                  )}
                 </p>
               </motion.div>
             )}
