@@ -19,6 +19,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [useFileFallback, setUseFileFallback] = useState(false);
   
+  // States for Sequential QR (Animated)
+  const [exportChunkIndex, setExportChunkIndex] = useState(0);
+  const [importChunks, setImportChunks] = useState<Record<number, string>>({});
+  const [importTotal, setImportTotal] = useState(0);
+  
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,28 +68,102 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
   const qrValue = useMemo(() => {
     try {
-      return JSON.stringify(exportData);
+      const fullData = JSON.stringify(exportData);
+      
+      // If data is small enough, return as is
+      if (fullData.length <= 2000) {
+        return fullData;
+      }
+      
+      // Split into chunks if too large (Sequential QR)
+      const CHUNK_SIZE = 1200;
+      const chunks = [];
+      for (let i = 0; i < fullData.length; i += CHUNK_SIZE) {
+        chunks.push(fullData.substring(i, i + CHUNK_SIZE));
+      }
+      
+      const index = exportChunkIndex % chunks.length;
+      return `SEQ|${index}|${chunks.length}|${chunks[index]}`;
     } catch (e) {
       return '';
     }
+  }, [exportData, exportChunkIndex]);
+
+  const isSequential = useMemo(() => {
+    try {
+      return JSON.stringify(exportData).length > 2000;
+    } catch (e) {
+      return false;
+    }
   }, [exportData]);
 
-  const isTooLarge = qrValue.length > 2800; // Limit with compression
+  const totalExportChunks = useMemo(() => {
+    try {
+      const fullData = JSON.stringify(exportData);
+      return Math.ceil(fullData.length / 1200);
+    } catch (e) {
+      return 1;
+    }
+  }, [exportData]);
+
+  // Auto-cycle chunks if sequential
+  useEffect(() => {
+    if (mode === 'export' && isSequential) {
+      const interval = setInterval(() => {
+        setExportChunkIndex(prev => (prev + 1) % totalExportChunks);
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [mode, isSequential, totalExportChunks]);
 
   const handleScanSuccess = async (decodedText: string) => {
     try {
       let dataStr = decodedText.trim();
       
-      // WhatsApp adds newlines and sometimes timestamps. 
-      // We need to look for the pattern and extract the JSON part even if it spans multiple lines.
+      // Handle WhatsApp prefix
       const prefix = 'BÜTÇE_VERİSİ:';
       const startIndex = dataStr.indexOf(prefix);
-      
       if (startIndex !== -1) {
-        // Extract everything after the prefix
         dataStr = dataStr.substring(startIndex + prefix.length).trim();
       }
 
+      // Check for Sequential QR format: SEQ|index|total|data
+      if (dataStr.startsWith('SEQ|')) {
+        const parts = dataStr.split('|');
+        if (parts.length >= 4) {
+          const index = parseInt(parts[1]);
+          const total = parseInt(parts[2]);
+          const payload = parts.slice(3).join('|');
+
+          setImportTotal(total);
+          setImportChunks(prev => {
+            const next = { ...prev, [index]: payload };
+            
+            // Check if we have all chunks
+            if (Object.keys(next).length === total) {
+              const fullData = Array.from({ length: total })
+                .map((_, i) => next[i])
+                .join('');
+              
+              // Process full data
+              setTimeout(() => finalizeImport(fullData), 100);
+            }
+            return next;
+          });
+          return;
+        }
+      }
+
+      // Handle direct JSON (Static QR or Clipboard)
+      finalizeImport(dataStr);
+    } catch (e) {
+      console.error("Parse error:", e);
+      setSyncStatus({ success: false, message: "Veri okunamadı. Lütfen metnin tamamını kopyaladığınızdan emin olun." });
+    }
+  };
+
+  const finalizeImport = (dataStr: string) => {
+    try {
       // Find the first '[' and last ']' to isolate the JSON array
       const firstBracket = dataStr.indexOf('[');
       const lastBracket = dataStr.lastIndexOf(']');
@@ -104,13 +183,17 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
         onImport(imported as ReceiptData[]);
         setSyncStatus({ success: true, message: `${imported.length} kayıt başarıyla aktarıldı.` });
         stopScanner();
-        setTimeout(() => setMode('selection'), 2000);
+        setTimeout(() => {
+          setMode('selection');
+          setImportChunks({});
+          setImportTotal(0);
+        }, 2000);
       } else {
         setSyncStatus({ success: false, message: "Veri listesi bulunamadı." });
       }
     } catch (e) {
-      console.error("Parse error:", e);
-      setSyncStatus({ success: false, message: "Veri okunamadı. Lütfen metnin tamamını kopyaladığınızdan emin olun." });
+      console.error("Finalize parse error:", e);
+      setSyncStatus({ success: false, message: "Veri çözümlenemedi." });
     }
   };
 
@@ -408,50 +491,53 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
                 <div className="text-center">
                   <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-4">
-                    {exportData.length} Kayıt Gönderiliyor
+                    {compressData(receipts.filter(r => {
+                      if (selectedMonth === 'Hepsi') return true;
+                      const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
+                      return rMonth === selectedMonth;
+                    })).length} Kayıt Gönderiliyor
                   </p>
                   
-                  {isTooLarge ? (
-                    <div className="p-8 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-400 space-y-4">
-                      <AlertCircle className="mx-auto" size={32} />
-                      <p className="text-xs font-semibold">Veri Miktarı QR Kapasitesini Aşıyor!</p>
-                      <p className="text-[10px] leading-relaxed">
-                        Seçilen dönemdeki kayıt sayısı tek bir QR kod içine sığdırılamaz kadar büyük. 
-                      </p>
-                      <button 
-                        onClick={handleShareData}
-                        className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg flex items-center justify-center gap-2"
-                      >
-                        <Share2 size={18} />
-                        WhatsApp ile Paylaş
-                      </button>
-                      <button 
-                        onClick={handleDownloadFile}
-                        className="w-full py-2 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest hover:underline"
-                      >
-                        Dosya Olarak İndir
-                      </button>
+                  <div className="space-y-6 flex flex-col items-center">
+                    <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl relative">
+                      <QRCodeSVG 
+                        value={qrValue} 
+                        size={256}
+                        level="L"
+                        includeMargin={true}
+                      />
+                      
+                      {isSequential && (
+                        <div className="absolute top-2 right-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-full animate-pulse">
+                          {((exportChunkIndex % totalExportChunks) + 1)} / {totalExportChunks}
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="space-y-6 flex flex-col items-center">
-                      <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl">
-                        <QRCodeSVG 
-                          value={qrValue} 
-                          size={256}
-                          level="L"
-                          includeMargin={true}
+                    
+                    {isSequential && (
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <motion.div 
+                          className="bg-indigo-500 h-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${((exportChunkIndex % totalExportChunks) + 1) / totalExportChunks * 100}%` }}
                         />
                       </div>
-                      
-                      <button 
-                        onClick={handleShareData}
-                        className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-full hover:bg-indigo-100 transition-colors"
-                      >
-                        <Share2 size={14} />
-                        WhatsApp / Dosya ile Gönder
-                      </button>
-                    </div>
-                  )}
+                    )}
+
+                    <button 
+                      onClick={handleShareData}
+                      className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-full hover:bg-indigo-100 transition-colors"
+                    >
+                      <Share2 size={14} />
+                      WhatsApp / Dosya ile Gönder
+                    </button>
+                    
+                    {isSequential && (
+                      <p className="text-[10px] text-indigo-500 font-medium animate-pulse">
+                        Dinamik QR Aktif: Eşiniz taranana kadar kamerasını tutmalı.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 px-8 italic">
@@ -499,6 +585,14 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                 <div className="relative rounded-[32px] overflow-hidden bg-slate-900 aspect-square border border-slate-200 dark:border-slate-800">
                   <div id="qr-reader" className={`w-full h-full ${useFileFallback ? 'hidden' : 'block'}`}></div>
                   
+                  {!useFileFallback && importTotal > 0 && !syncStatus && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                      <div className="bg-indigo-600/90 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-lg border border-white/20">
+                        {Object.keys(importChunks).length} / {importTotal} Parça Okundu
+                      </div>
+                    </div>
+                  )}
+
                   {useFileFallback && !syncStatus && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400">
                       <ImageIcon size={48} className="mb-4 opacity-20" />
