@@ -22,6 +22,34 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper to compress/decompress data for QR
+  const compressData = (data: any[]) => {
+    return data.map(r => ({
+      v: r.vendor,
+      d: r.date,
+      t: r.total,
+      c: r.category,
+      u: r.currency,
+      s: r.timestamp,
+      i: r.id
+    }));
+  };
+
+  const decompressData = (data: any[]) => {
+    return data.map(r => ({
+      vendor: r.v,
+      date: r.d,
+      total: r.t,
+      category: r.c,
+      currency: r.u,
+      timestamp: r.s,
+      id: r.i,
+      tax: 0,
+      items: [],
+      confidence: 1
+    }));
+  };
+
   // Filter receipts for export
   const exportData = useMemo(() => {
     const filtered = receipts.filter(r => {
@@ -30,8 +58,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       return rMonth === selectedMonth;
     });
 
-    // Remove heavy data for QR sync to keep it small
-    return filtered.map(({ imageUrl, items, confidence, ...rest }) => rest);
+    return compressData(filtered);
   }, [receipts, selectedMonth]);
 
   const qrValue = useMemo(() => {
@@ -42,11 +69,17 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     }
   }, [exportData]);
 
-  const isTooLarge = qrValue.length > 2500;
+  const isTooLarge = qrValue.length > 2800; // Limit with compression
 
   const handleScanSuccess = (decodedText: string) => {
     try {
-      const imported = JSON.parse(decodedText);
+      let imported = JSON.parse(decodedText);
+      
+      // Check if it's compressed format
+      if (Array.isArray(imported) && imported.length > 0 && imported[0].v !== undefined) {
+        imported = decompressData(imported);
+      }
+
       if (Array.isArray(imported)) {
         onImport(imported as ReceiptData[]);
         setSyncStatus({ success: true, message: `${imported.length} kayıt başarıyla aktarıldı.` });
@@ -56,8 +89,18 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
         setSyncStatus({ success: false, message: "Geçersiz veri formatı." });
       }
     } catch (e) {
-      setSyncStatus({ success: false, message: "QR kod okunamadı veya geçersiz veri içeriyor." });
+      setSyncStatus({ success: false, message: "Veri okunamadı veya geçersiz veri içeriyor." });
     }
+  };
+
+  const handleDownloadFile = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(receipts));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href",     dataStr);
+    downloadAnchorNode.setAttribute("download", `butce_yedek_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
   };
 
   const startScanner = async () => {
@@ -255,12 +298,18 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                   </p>
                   
                   {isTooLarge ? (
-                    <div className="p-8 bg-rose-50 dark:bg-rose-900/20 rounded-2xl border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 space-y-3">
+                    <div className="p-8 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-400 space-y-4">
                       <AlertCircle className="mx-auto" size={32} />
-                      <p className="text-xs font-semibold">Veri Miktarı Çok Fazla!</p>
+                      <p className="text-xs font-semibold">Veri Miktarı QR Kapasitesini Aşıyor!</p>
                       <p className="text-[10px] leading-relaxed">
-                        Seçilen aydaki veri miktarı QR kod kapasitesini aşıyor. Lütfen daha az kayıt içeren bir dönem seçin.
+                        Seçilen dönemdeki kayıt sayısı tek bir QR kod içine sığdırılamaz kadar büyük. 
                       </p>
+                      <button 
+                        onClick={handleDownloadFile}
+                        className="w-full py-3 bg-amber-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg"
+                      >
+                        Dosya Oluştur ve Paylaş (Offline)
+                      </button>
                     </div>
                   ) : (
                     <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl">
