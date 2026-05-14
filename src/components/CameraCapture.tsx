@@ -26,18 +26,23 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
     setIsInitializing(true);
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const constraints = {
         video: { 
-          facingMode: 'environment',
+          facingMode: { ideal: 'environment' },
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         },
         audio: false
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // We need to wait for the video element to be available in the DOM
+      // Since it's only rendered when !isInitializing, we have a problem.
+      // Let's change the rendering logic to always have the video element but hide it if initializing.
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-      setIsInitializing(false);
     } catch (err) {
       console.error("Camera access error:", err);
       setError("Kameraya erişilemedi. Lütfen izinleri kontrol edin.");
@@ -54,6 +59,13 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
       }
     };
   }, [startCamera]);
+
+  const handleVideoReady = () => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(console.error);
+    }
+    setIsInitializing(false);
+  };
 
   const capture = useCallback(() => {
     if (!videoRef.current || isCapturing) return;
@@ -126,15 +138,32 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden">
-      {isInitializing && (
-        <div className="flex flex-col items-center gap-4 text-white">
-          <Loader2 size={48} className="animate-spin text-indigo-500" />
-          <p className="text-xs uppercase tracking-widest font-bold">Kamera Hazırlanıyor...</p>
-        </div>
-      )}
+      {/* Video is always in DOM but hidden by loader if initializing */}
+      <video 
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        onLoadedMetadata={handleVideoReady}
+        className={`h-full w-full object-cover transition-opacity duration-500 ${isInitializing || error ? 'opacity-0' : 'opacity-100'}`}
+      />
+
+      <AnimatePresence>
+        {isInitializing && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black gap-4 text-white"
+          >
+            <Loader2 size={48} className="animate-spin text-indigo-500" />
+            <p className="text-xs uppercase tracking-widest font-bold">Kamera Hazırlanıyor...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {error && (
-        <div className="flex flex-col items-center gap-6 p-10 text-center text-white">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black gap-6 p-10 text-center text-white">
           <p className="text-sm font-bold text-rose-500">{error}</p>
           <button 
             onClick={startCamera}
@@ -148,14 +177,6 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
 
       {!isInitializing && !error && (
         <>
-          <video 
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="h-full w-full object-cover"
-          />
-          
           <canvas ref={canvasRef} width={100} height={100} className="hidden" />
 
           {/* Overlay UI */}
