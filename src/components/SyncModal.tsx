@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { X, QrCode, Scan, Download, Upload, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { X, QrCode, Scan, Download, Upload, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Image as ImageIcon, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReceiptData } from '../types';
 
@@ -16,6 +16,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const [mode, setMode] = useState<'selection' | 'export' | 'import'>('selection');
   const [selectedMonth, setSelectedMonth] = useState<string>(availableMonths[0] || 'Hepsi');
   const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [useFileFallback, setUseFileFallback] = useState(false);
+  
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter receipts for export
   const exportData = useMemo(() => {
@@ -25,8 +30,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       return rMonth === selectedMonth;
     });
 
-    // Remove heavy image data for QR sync
-    return filtered.map(({ imageUrl, ...rest }) => rest);
+    // Remove heavy data for QR sync to keep it small
+    return filtered.map(({ imageUrl, items, confidence, ...rest }) => rest);
   }, [receipts, selectedMonth]);
 
   const qrValue = useMemo(() => {
@@ -37,64 +42,98 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     }
   }, [exportData]);
 
-  const isTooLarge = qrValue.length > 2500; // Rough limit for readable QR codes
+  const isTooLarge = qrValue.length > 2500;
+
+  const handleScanSuccess = (decodedText: string) => {
+    try {
+      const imported = JSON.parse(decodedText);
+      if (Array.isArray(imported)) {
+        onImport(imported as ReceiptData[]);
+        setSyncStatus({ success: true, message: `${imported.length} kayıt başarıyla aktarıldı.` });
+        stopScanner();
+        setTimeout(() => setMode('selection'), 2000);
+      } else {
+        setSyncStatus({ success: false, message: "Geçersiz veri formatı." });
+      }
+    } catch (e) {
+      setSyncStatus({ success: false, message: "QR kod okunamadı veya geçersiz veri içeriyor." });
+    }
+  };
+
+  const startScanner = async () => {
+    const element = document.getElementById("qr-reader");
+    if (!element) return;
+
+    try {
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode("qr-reader");
+      }
+
+      await scannerRef.current.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        handleScanSuccess,
+        () => {} // Ignore scan errors
+      );
+      setIsCameraActive(true);
+      setSyncStatus(null);
+    } catch (err) {
+      console.error("Camera start error", err);
+      setIsCameraActive(false);
+      setUseFileFallback(true);
+      setSyncStatus({ 
+        success: false, 
+        message: "Kamera başlatılamadı. İzinlerinizi kontrol edin veya resim seçerek tarayın." 
+      });
+    }
+  };
+
+  const stopScanner = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+        setIsCameraActive(false);
+      } catch (err) {
+        console.error("Camera stop error", err);
+      }
+    }
+  };
+
+  const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!scannerRef.current) {
+      scannerRef.current = new Html5Qrcode("qr-reader");
+    }
+
+    setSyncStatus({ message: "Resim taranıyor..." });
+
+    try {
+      const decodedText = await scannerRef.current.scanFile(file, true);
+      handleScanSuccess(decodedText);
+    } catch (err) {
+      console.error("File scan error", err);
+      setSyncStatus({ success: false, message: "Resimde QR kod bulunamadı." });
+    }
+  };
 
   useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
-    let isMounted = true;
-
-    if (mode === 'import') {
+    if (mode === 'import' && !useFileFallback) {
       const timer = setTimeout(() => {
-        if (!isMounted) return;
-        
-        const element = document.getElementById("qr-reader");
-        if (!element) {
-          console.warn("QR reader element not found yet, retrying...");
-          return;
-        }
-
-        try {
-          scanner = new Html5QrcodeScanner(
-            "qr-reader",
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            /* verbose= */ false
-          );
-
-          scanner.render((decodedText) => {
-            try {
-              const imported = JSON.parse(decodedText);
-              if (Array.isArray(imported)) {
-                onImport(imported as ReceiptData[]);
-                setSyncStatus({ success: true, message: `${imported.length} kayıt başarıyla aktarıldı.` });
-                if (scanner) scanner.clear().catch(console.error);
-                setTimeout(() => setMode('selection'), 2000);
-              } else {
-                setSyncStatus({ success: false, message: "Geçersiz veri formatı." });
-              }
-            } catch (e) {
-              setSyncStatus({ success: false, message: "QR kod okunamadı veya geçersiz veri içeriyor." });
-            }
-          }, (error) => {
-            // Silently ignore regular scan failures to keep searching
-          });
-        } catch (err: any) {
-          console.error("Scanner initialization error", err);
-          setSyncStatus({ 
-            success: false, 
-            message: "Kamera başlatılamadı. Lütfen kamera izinlerini kontrol edin veya uygulamayı yeni sekmede açın." 
-          });
-        }
-      }, 500); // Increased delay for smoother transitions
-
+        startScanner();
+      }, 500);
       return () => {
-        isMounted = false;
         clearTimeout(timer);
-        if (scanner) {
-          scanner.clear().catch(err => console.error("Scanner clear error", err));
-        }
+        stopScanner();
       };
+    } else if (mode !== 'import') {
+      stopScanner();
     }
-  }, [mode, onImport]);
+  }, [mode, useFileFallback]);
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -147,15 +186,36 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                   </button>
 
                   <button 
-                    onClick={() => setMode('import')}
+                    onClick={() => {
+                      setMode('import');
+                      setUseFileFallback(false);
+                    }}
                     className="flex items-center gap-4 p-5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all border border-emerald-100/50 dark:border-emerald-500/20 group"
                   >
                     <div className="w-12 h-12 bg-white dark:bg-emerald-900/40 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                       <Scan size={24} />
                     </div>
                     <div className="text-left">
-                      <span className="block font-bold text-sm uppercase tracking-tight">Veri Al</span>
+                      <span className="block font-bold text-sm uppercase tracking-tight">Veri Al (Kamera)</span>
                       <span className="text-[11px] opacity-70">Eşinizin QR kodunu kamerayla tarayın</span>
+                    </div>
+                    <ChevronRight size={18} className="ml-auto opacity-40" />
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      setMode('import');
+                      setUseFileFallback(true);
+                      setTimeout(() => fileInputRef.current?.click(), 100);
+                    }}
+                    className="flex items-center gap-4 p-5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-2xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all border border-amber-100/50 dark:border-amber-500/20 group"
+                  >
+                    <div className="w-12 h-12 bg-white dark:bg-amber-900/40 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                      <ImageIcon size={24} />
+                    </div>
+                    <div className="text-left">
+                      <span className="block font-bold text-sm uppercase tracking-tight">Resimden Al (Çözüm)</span>
+                      <span className="text-[11px] opacity-70">QR kodun ekran görüntüsünü seçin</span>
                     </div>
                     <ChevronRight size={18} className="ml-auto opacity-40" />
                   </button>
@@ -207,7 +267,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                       <QRCodeSVG 
                         value={qrValue} 
                         size={256}
-                        level="M"
+                        level="L"
                         includeMargin={true}
                       />
                     </div>
@@ -215,7 +275,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                 </div>
 
                 <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 px-8 italic">
-                  Eşiniz "Veri Al" moduna girerek bu kodu tarayabilir. İndirim ve kampanya verileriniz korunur.
+                  Eşiniz "Veri Al" moduna girerek bu kodu tarayabilir veya ekran görüntüsü alıp resim olarak yükleyebilir.
                 </p>
               </motion.div>
             )}
@@ -228,30 +288,72 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                 exit={{ opacity: 0, scale: 0.9 }}
                 className="space-y-4"
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <button onClick={() => setMode('selection')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
-                    <ChevronLeft size={20} />
-                  </button>
-                  <p className="text-sm font-semibold uppercase tracking-tight text-slate-700 dark:text-slate-200">
-                    Tarayıcı Aktif
-                  </p>
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setMode('selection')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                      <ChevronLeft size={20} />
+                    </button>
+                    <p className="text-sm font-semibold uppercase tracking-tight text-slate-700 dark:text-slate-200">
+                      {useFileFallback ? "Resimden Tara" : "Kamera Aktif"}
+                    </p>
+                  </div>
+                  
+                  {!useFileFallback && (
+                    <button 
+                      onClick={() => setUseFileFallback(true)}
+                      className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg"
+                    >
+                      Resim Yükle
+                    </button>
+                  )}
                 </div>
 
                 <div className="relative rounded-[32px] overflow-hidden bg-slate-900 aspect-square border border-slate-200 dark:border-slate-800">
-                  <div id="qr-reader" className="w-full h-full"></div>
+                  <div id="qr-reader" className={`w-full h-full ${useFileFallback ? 'hidden' : 'block'}`}></div>
                   
+                  {useFileFallback && !syncStatus && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                      <ImageIcon size={48} className="mb-4 opacity-20" />
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg"
+                      >
+                        Dosya Seç
+                      </button>
+                    </div>
+                  )}
+
                   {syncStatus && (
                     <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md ${syncStatus.success ? 'bg-emerald-500/90' : 'bg-rose-500/90'} text-white`}>
                       {syncStatus.success ? <CheckCircle2 size={48} /> : <AlertCircle size={48} />}
                       <p className="mt-4 font-bold uppercase tracking-widest">{syncStatus.success ? 'Başarılı' : 'Hata'}</p>
                       <p className="text-sm mt-1">{syncStatus.message}</p>
+                      
+                      {!syncStatus.success && (
+                        <button 
+                          onClick={() => setSyncStatus(null)}
+                          className="mt-6 text-[10px] uppercase font-bold tracking-widest bg-white/20 px-4 py-2 rounded-full"
+                        >
+                          Tekrar Dene
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
 
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleFileScan}
+                />
+
                 <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 px-4">
-                  Eşinizin cihazındaki QR kodu kadrajın içine yerleştirin.
-                  {!syncStatus && (
+                  {useFileFallback 
+                    ? "QR kodun bulunduğu fotoğrafı veya ekran görüntüsünü seçin." 
+                    : "Eşinizin cihazındaki QR kodu kadrajın içine yerleştirin."}
+                  {!useFileFallback && !syncStatus && (
                     <span className="block mt-2 text-indigo-500 font-medium cursor-pointer hover:underline" onClick={() => window.open(window.location.href, '_blank')}>
                       Kamera açılmıyorsa yeni sekmede deneyin →
                     </span>
