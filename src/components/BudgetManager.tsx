@@ -582,66 +582,67 @@ export const BudgetManager: React.FC<Props> = ({
               ))}
             </div>
 
-      <motion.div 
-        layout
-        className="bg-brand dark:bg-brand/90 rounded-[32px] p-7 text-white shadow-2xl shadow-brand/20 relative overflow-hidden group"
-      >
-        <div className="absolute -right-8 -top-8 w-48 h-48 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors"></div>
-        
-        <div className="flex items-center justify-between mb-6 relative z-10">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-70 leading-none">{selectedCategory === 'Hepsi' ? 'Toplam Harcama' : selectedCategory}</span>
-            <div className="text-4xl font-medium tracking-tighter tabular-nums flex items-baseline gap-1.5 font-display">
-              {categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-              <span className="text-xl font-serif italic text-white/40">₺</span>
-            </div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-xl p-3 rounded-2xl border border-white/10">
-            <TrendingUp size={24} />
-          </div>
-        </div>
-        
-        <div className="space-y-3 relative z-10">
-          <div className="flex items-center gap-2">
-            <BarChart size={12} className="opacity-70" />
-            <span className="text-[9px] font-medium uppercase tracking-[0.2em] opacity-70">Haftalık Dağılım</span>
-          </div>
-          <div className="flex gap-2 items-end h-12">
-            {weeklyStats.map((val, idx) => {
-              const h = (val / maxWeekly) * 100;
-              return (
-                <div 
-                  key={idx} 
-                  className="flex-1 flex flex-col items-center gap-1.5 group/week relative h-full cursor-pointer"
-                  onClick={() => setActiveWeekTooltip(activeWeekTooltip === idx ? null : idx)}
-                >
-                  <AnimatePresence>
-                    {activeWeekTooltip === idx && (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.8, y: 5 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: 5 }}
-                        className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-brand text-[10px] font-medium py-1.5 px-3 rounded-xl shadow-2xl z-30 whitespace-nowrap"
-                      >
-                        {val.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}₺
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
-                  <div className="w-full bg-white/10 rounded-full overflow-hidden h-full flex items-end">
-                    <motion.div 
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.max(h, 15)}%` }}
-                      className={`w-full transition-all duration-500 rounded-full ${activeWeekTooltip === idx ? 'bg-white' : 'bg-white/60'}`} 
-                    ></motion.div>
+            <motion.div 
+              layout
+              className="bg-indigo-600 dark:bg-indigo-700 rounded-[28px] p-5 text-white shadow-xl shadow-indigo-100 dark:shadow-none border border-white/10 relative overflow-hidden group"
+            >
+              <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
+                <TrendingUp size={120} />
+              </div>
+              
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-medium uppercase tracking-[0.2em] opacity-70 mb-0.5">{selectedCategory === 'Hepsi' ? 'Toplam Harcama' : selectedCategory}</span>
+                  <div className="text-3xl font-medium tracking-tighter tabular-nums font-display">
+                    {categoryTotalSpent.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-base ml-1 opacity-50">₺</span>
                   </div>
-                  <span className={`text-[7px] font-medium tracking-widest transition-opacity ${activeWeekTooltip === idx ? 'opacity-100' : 'opacity-40'}`}>H{idx+1}</span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </motion.div>
+                <div className="bg-white/20 backdrop-blur-md p-2.5 rounded-xl">
+                  <ArrowUpRight size={20} />
+                </div>
+              </div>
+              
+              <div className="space-y-2 relative z-10">
+                <div className="flex items-center gap-1.5">
+                  <BarChart size={10} className="opacity-70" />
+                  <span className="text-[8px] font-medium uppercase tracking-[0.2em] opacity-70">Haftalık Analiz</span>
+                </div>
+                <div className="flex gap-1.5 items-end h-10">
+                  {weeklyStats.map((val, idx) => {
+                    const h = (val / maxWeekly) * 100;
+                    return (
+                      <div 
+                        key={idx} 
+                        className="flex-1 flex flex-col items-center gap-1 group/week relative h-full cursor-pointer"
+                        onClick={() => setActiveWeekTooltip(activeWeekTooltip === idx ? null : idx)}
+                      >
+                        <AnimatePresence>
+                          {activeWeekTooltip === idx && (
+                            <motion.div 
+                              initial={{ opacity: 0, scale: 0.8, y: 5 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.8, y: 5 }}
+                              className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-indigo-600 text-[9px] font-medium py-1 px-2.5 rounded-lg shadow-2xl z-30 whitespace-nowrap"
+                            >
+                              {val.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}₺
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                        
+                        <div className="w-full bg-white/10 rounded-md overflow-hidden h-full flex items-end">
+                          <motion.div 
+                            initial={{ height: 0 }}
+                            animate={{ height: `${Math.max(h, 8)}%` }}
+                            className={`w-full transition-colors duration-300 ${activeWeekTooltip === idx ? 'bg-indigo-300' : 'bg-white'}`} 
+                          ></motion.div>
+                        </div>
+                        <span className={`text-[6px] font-medium tracking-widest transition-opacity ${activeWeekTooltip === idx ? 'opacity-100' : 'opacity-50'}`}>H{idx+1}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200/50 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
@@ -673,23 +674,20 @@ export const BudgetManager: React.FC<Props> = ({
                     <div className="flex-1 flex items-center gap-3 min-w-0" onClick={() => onViewReceipt(r)}>
                       <div className={`w-1 h-8 rounded-full shrink-0 ${getCategoryColor(r.category).split(' ')[1].replace('text-', 'bg-')}`}></div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[13px] font-serif italic font-medium block truncate uppercase text-slate-900 dark:text-white leading-tight mb-0.5 tracking-tight group-hover:text-brand transition-colors">{r.vendor}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-medium text-slate-400 tabular-nums">{formatDateForDisplay(r.date)}</span>
+                        <span className="font-medium block truncate uppercase text-[10px] text-slate-800 dark:text-slate-100 leading-tight mb-0.5 tracking-tight group-hover:text-indigo-600 transition-colors font-display tracking-tight">{r.vendor}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-medium text-slate-400 tabular-nums">{formatDateForDisplay(r.date)}</span>
                           <div className="w-0.5 h-0.5 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-                          <span className={`text-[8px] font-medium px-2 py-0.5 rounded-full border uppercase tracking-wider truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
+                          <span className={`text-[7px] font-medium px-1.5 py-0 rounded-md border uppercase tracking-wider truncate max-w-[80px] ${getCategoryColor(r.category)}`}>{r.category}</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end shrink-0 ml-1">
-                        <div className="text-[15px] font-medium text-slate-900 dark:text-white tabular-nums font-display flex items-baseline gap-0.5">
-                          {r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                          <span className="text-[11px] font-serif italic text-slate-300 dark:text-slate-600">₺</span>
-                        </div>
+                        <div className="text-xs font-medium text-slate-900 dark:text-slate-100 tabular-nums font-display mb-0.5">{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-[9px] ml-0.5 opacity-40">₺</span></div>
                         <motion.button 
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => { e.stopPropagation(); onDeleteReceipt(r.id); }} 
-                          className="p-1 px-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-all"
+                          className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-all"
                         >
                           <Trash2 size={12} />
                         </motion.button>

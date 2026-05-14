@@ -430,16 +430,18 @@ const App: React.FC = () => {
         </div>
       ) : (
         <>
-          <header className="sticky top-0 z-40 glass h-14 flex items-center justify-between px-6 border-b border-slate-200/40 dark:border-slate-800/50">
-            <div className="flex items-center gap-3">
+          <header className="sticky top-0 z-40 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl border-b border-slate-200/40 dark:border-slate-800/50 h-14 flex items-center justify-between px-6">
+            <div className="flex items-center gap-2">
               <motion.div 
-                whileHover={{ rotate: -5, scale: 1.05 }}
-                className="bg-brand rounded-lg text-white font-medium w-7 h-7 flex items-center justify-center text-sm"
+                whileHover={{ rotate: 15, scale: 1.1 }}
+                className="bg-indigo-600 rounded-xl text-white font-medium w-8 h-8 flex items-center justify-center text-sm shadow-xl shadow-indigo-500/30"
               >
-                <ScanText size={16} />
+                <div className="relative">
+                  <ScanText size={18} />
+                </div>
               </motion.div>
-              <h1 className="text-lg font-serif italic font-medium tracking-tight bg-gradient-to-r from-slate-950 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                Fiş<span className="text-brand not-italic ml-0.5">AI</span>
+              <h1 className="text-sm font-medium uppercase italic tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent flex items-center gap-1.5">
+                Fiş<span className="text-indigo-600">AI</span>
               </h1>
             </div>
             <div className="flex items-center gap-2">
@@ -447,28 +449,28 @@ const App: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowSettings(true)} 
-                className="p-2 text-slate-400 hover:text-brand bg-slate-50 dark:bg-slate-900 rounded-lg transition-all"
+                className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 dark:bg-slate-900 rounded-xl transition-all"
               >
-                <SettingsIcon size={16} />
+                <SettingsIcon size={18} />
               </motion.button>
             </div>
           </header>
 
-          <main className="max-w-xl mx-auto px-6 py-8 space-y-6">
+          <main className="max-w-xl mx-auto px-4 pt-1.5 space-y-1">
             <AnimatePresence mode="wait">
               {status === AppStatus.PROCESSING && (
                 <motion.div 
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-brand rounded-3xl p-6 text-white flex flex-col items-center justify-center gap-3 shadow-2xl shadow-brand/20"
+                  className="bg-indigo-600 rounded-3xl p-5 text-white flex flex-col items-center justify-center gap-3 shadow-xl shadow-indigo-600/20"
                 >
-                   <div className="bg-white/20 p-2 rounded-full backdrop-blur-md">
+                   <div className="bg-white/20 p-2 rounded-full">
                      <Loader2 size={24} className="animate-spin" />
                    </div>
                    <div className="text-center">
                      <span className="text-[10px] font-medium uppercase tracking-[0.2em] block mb-1 opacity-70">İşlem Yapılıyor</span>
-                     <span className="text-xs font-serif italic text-white/90">{statusText}</span>
+                     <span className="text-xs font-medium">{statusText}</span>
                    </div>
                 </motion.div>
               )}
@@ -476,38 +478,27 @@ const App: React.FC = () => {
 
             {activeTab === 'dashboard' && (
               <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-8"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-1 pt-1"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">Özet Görünüm</span>
-                    <div className="relative group">
-                      <select 
-                        value={dashboardMonth} 
-                        onChange={e => setDashboardMonth(e.target.value)} 
-                        className="bg-slate-50 dark:bg-slate-900/50 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800 rounded-full outline-none cursor-pointer appearance-none shadow-sm pr-8 transition-all hover:bg-white"
-                      >
-                        <option value="Hepsi">Tüm Zamanlar</option>
-                        {availableMonths.map(m => {
-                          const [y, mm] = m.split('-');
-                          const ms = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-                          return <option key={m} value={m}>{`${ms[parseInt(mm) - 1]} ${y}`}</option>;
-                        })}
-                      </select>
-                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-brand transition-colors">
-                         <ChevronDown size={10} />
-                      </div>
+                <div className="flex items-center gap-2 mb-3 px-2">
+                   <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
+                      <ScanText size={14} />
+                   </div>
+                   <h2 className="text-[15px] font-medium text-slate-800 dark:text-white uppercase tracking-tight">Ana Sayfa</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-1">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group font-sans">
+                    <div className="absolute top-0 right-0 p-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform">
+                      <Wallet size={80} />
                     </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-slate-900/50 p-8 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-brand/5 rounded-full blur-3xl group-hover:bg-brand/10 transition-colors"></div>
                     
-                    <div className="relative z-10 flex flex-col gap-1">
-                       <span className="text-xs font-serif italic text-slate-400">Bu ayki toplam harcamanız</span>
-                       <div className="text-5xl font-medium tracking-tight tabular-nums flex items-baseline gap-2 text-slate-900 dark:text-white font-display">
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
+                        <div className="text-2xl font-medium tracking-tight tabular-nums flex items-baseline gap-1 font-display">
                           {activeReceipts
                             .filter(r => {
                               if (dashboardMonth === 'Hepsi') return true;
@@ -516,70 +507,87 @@ const App: React.FC = () => {
                             })
                             .reduce((s, r) => s + r.total, 0)
                             .toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                          <span className="text-2xl font-serif italic text-slate-300 dark:text-slate-600">₺</span>
+                          <span className="text-base font-medium text-slate-300 dark:text-slate-700">₺</span>
                         </div>
+                      </div>
+                      
+                      <div className="relative group">
+                        <select 
+                          value={dashboardMonth} 
+                          onChange={e => setDashboardMonth(e.target.value)} 
+                          className="bg-indigo-50 dark:bg-slate-800 px-3 py-1.5 pr-8 rounded-xl text-[12px] font-medium text-indigo-700 dark:text-slate-200 border-none outline-none cursor-pointer appearance-none shadow-sm group-hover:bg-indigo-100 dark:group-hover:bg-slate-700 transition-all active:scale-95"
+                        >
+                          <option value="Hepsi">Tüm Zamanlar</option>
+                          {availableMonths.map(m => {
+                            const [y, mm] = m.split('-');
+                            const ms = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+                            return <option key={m} value={m}>{`${ms[parseInt(mm) - 1]} ${y}`}</option>;
+                          })}
+                        </select>
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 group-hover:text-indigo-600 transition-colors">
+                           <ChevronDown size={12} />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center gap-8 relative z-10">
+                    <div className="flex items-center gap-4">
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Kayıt</span>
-                        <span className="text-xl font-medium font-serif italic">{activeReceipts.length}</span>
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
+                        <span className="text-base font-medium font-display">{activeReceipts.length}</span>
                       </div>
-                      <div className="h-8 w-px bg-slate-100 dark:bg-slate-800"></div>
+                      <div className="h-6 w-px bg-slate-100 dark:bg-slate-800"></div>
                       <div className="flex flex-col">
                         <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Ortalama</span>
-                        <span className="text-xl font-medium font-serif italic">
+                        <span className="text-base font-medium font-display">
                           {(activeReceipts.length > 0 ? activeReceipts.reduce((s, r) => s + r.total, 0) / activeReceipts.length : 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
-                          <span className="text-sm ml-1 opacity-40">₺</span>
+                          <span className="text-[12px] ml-0.5 opacity-40">₺</span>
                         </span>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 gap-4">
                   <motion.button 
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    whileTap={{ scale: 0.99 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => fileInputRef.current?.click()} 
                     disabled={status === AppStatus.PROCESSING} 
-                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-[20px] flex items-center justify-center gap-3 shadow-xl hover:shadow-brand/20 transition-all font-medium"
+                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
                   >
-                     <ScanText size={20} className="text-brand" /> 
-                     <span className="text-sm uppercase tracking-[0.1em]">Yeni Fiş Tara</span>
+                     <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                     <Plus size={18} className="relative z-10" /> 
+                     <span className="text-[13px] font-medium uppercase tracking-widest relative z-10">Fiş Tara</span>
                   </motion.button>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-[0.2em] shrink-0">Son İşlemler</h3>
-                    <div className="h-px w-full bg-slate-100 dark:bg-slate-800"></div>
-                  </div>
+                <div className="pt-2">
+                  <div className="flex justify-between items-center mb-2 px-2">
+                    <h3 className="text-[12px] font-medium text-slate-400 uppercase tracking-[0.2em]">Son İşlemler</h3>
+                        <div className="h-px flex-1 mx-4 bg-slate-100 dark:bg-slate-800"></div>
+                      </div>
                   
-                  <ReceiptTable 
-                    receipts={activeReceipts.filter(r => {
-                      if (dashboardMonth === 'Hepsi') return true;
-                      if (!r.date) return false;
-                      let rMonth = '';
-                      if (r.date.includes('.')) {
-                        const parts = r.date.split('.');
-                        rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
-                      } else if (r.date.includes('-')) {
-                        rMonth = r.date.substring(0, 7);
-                      }
-                      return rMonth === dashboardMonth;
-                    })}
-                    onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 
-                    onView={setSelectedReceipt} 
-                    onCopySingle={() => Promise.resolve(true)}
-                    viewMode="standard" 
-                    selectedIds={selectedIds}
-                    onToggleSelect={handleToggleSelect}
-                  />
-                </div>
-              </motion.div>
-            )}
-
+                    <ReceiptTable 
+                      receipts={activeReceipts.filter(r => {
+                        if (dashboardMonth === 'Hepsi') return true;
+                        if (!r.date) return false;
+                        let rMonth = '';
+                        if (r.date.includes('.')) {
+                          const parts = r.date.split('.');
+                          rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+                        } else if (r.date.includes('-')) {
+                          rMonth = r.date.substring(0, 7);
+                        }
+                        return rMonth === dashboardMonth;
+                      })}
+                      onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 
+                      onView={setSelectedReceipt} 
+                      onCopySingle={() => Promise.resolve(true)}
+                      viewMode="standard" 
+                      selectedIds={selectedIds}
+                      onToggleSelect={handleToggleSelect}
+                    />
+                  </div>
+                </motion.div>
+              )}
 
           <AnimatePresence>
             {selectedIds.length > 0 && (
