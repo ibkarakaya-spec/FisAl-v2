@@ -15,7 +15,13 @@ interface SyncModalProps {
 export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClose, availableMonths }) => {
   const [mode, setMode] = useState<'selection' | 'export' | 'import'>('selection');
   const [selectedMonth, setSelectedMonth] = useState<string>(availableMonths[0] || 'Hepsi');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Hepsi');
   const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+
+  const availableCategories = useMemo(() => {
+    const cats = new Set(receipts.map(r => r.category));
+    return Array.from(cats).sort();
+  }, [receipts]);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [useFileFallback, setUseFileFallback] = useState(false);
   
@@ -58,13 +64,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   // Filter receipts for export
   const exportData = useMemo(() => {
     const filtered = receipts.filter(r => {
-      if (selectedMonth === 'Hepsi') return true;
-      const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
-      return rMonth === selectedMonth;
+      const matchesMonth = selectedMonth === 'Hepsi' || (r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7)) === selectedMonth;
+      const matchesCategory = selectedCategory === 'Hepsi' || r.category === selectedCategory;
+      return matchesMonth && matchesCategory;
     });
 
     return compressData(filtered);
-  }, [receipts, selectedMonth]);
+  }, [receipts, selectedMonth, selectedCategory]);
 
   const qrValue = useMemo(() => {
     try {
@@ -226,9 +232,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   };
 
   const handleShareData = async () => {
-    const dataToShare = selectedMonth === 'Hepsi' ? receipts : receipts.filter(r => {
-      const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
-      return rMonth === selectedMonth;
+    const dataToShare = receipts.filter(r => {
+      const matchesMonth = selectedMonth === 'Hepsi' || (r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7)) === selectedMonth;
+      const matchesCategory = selectedCategory === 'Hepsi' || r.category === selectedCategory;
+      return matchesMonth && matchesCategory;
     });
 
     const fileName = `butce_paylasim_${new Date().toISOString().split('T')[0]}.json`;
@@ -471,31 +478,43 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6 flex flex-col items-center"
               >
-                <div className="w-full flex items-center justify-between gap-4">
-                  <button onClick={() => setMode('selection')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
-                    <ChevronLeft size={20} />
-                  </button>
-                  <select 
-                    value={selectedMonth} 
-                    onChange={e => setSelectedMonth(e.target.value)} 
-                    className="flex-1 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 border-none outline-none cursor-pointer"
-                  >
-                    <option value="Hepsi">Tüm Zamanlar</option>
-                    {availableMonths.map(m => {
-                      const [y, mm] = m.split('-');
-                      const ms = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-                      return <option key={m} value={m}>{`${ms[parseInt(mm) - 1]} ${y}`}</option>;
-                    })}
-                  </select>
+                <div className="w-full flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setMode('selection')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                      <ChevronLeft size={20} />
+                    </button>
+                    <select 
+                      value={selectedMonth} 
+                      onChange={e => setSelectedMonth(e.target.value)} 
+                      className="flex-1 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 border-none outline-none cursor-pointer"
+                    >
+                      <option value="Hepsi">Tüm Zamanlar</option>
+                      {availableMonths.map(m => {
+                        const [y, mm] = m.split('-');
+                        const ms = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+                        return <option key={m} value={m}>{`${ms[parseInt(mm) - 1]} ${y}`}</option>;
+                      })}
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 pl-12">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 min-w-fit">Kategori:</span>
+                    <select 
+                      value={selectedCategory} 
+                      onChange={e => setSelectedCategory(e.target.value)} 
+                      className="flex-1 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 border-none outline-none cursor-pointer"
+                    >
+                      <option value="Hepsi">Tüm Kategoriler</option>
+                      {availableCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="text-center">
                   <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-4">
-                    {compressData(receipts.filter(r => {
-                      if (selectedMonth === 'Hepsi') return true;
-                      const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
-                      return rMonth === selectedMonth;
-                    })).length} Kayıt Gönderiliyor
+                    {exportData.length} Kayıt Gönderiliyor
                   </p>
                   
                   <div className="space-y-6 flex flex-col items-center">
