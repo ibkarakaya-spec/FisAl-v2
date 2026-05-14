@@ -119,48 +119,33 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       return rMonth === selectedMonth;
     });
 
-    const jsonString = JSON.stringify(dataToShare);
-    const fileName = `butce_paylasim_${new Date().toISOString().split('T')[0]}.json`;
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const file = new File([blob], fileName, { type: 'application/json' });
+    // Use compressed version for sharing to stay within limits
+    const jsonString = JSON.stringify(compressData(dataToShare));
+    const shareText = `BÜTÇE_VERİSİ:${jsonString}`;
 
-    // 1. Try Native File Sharing (Best for mobile app/WhatsApp)
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: 'Bütçe Veri Paylaşımı',
-          text: 'Bütçe verilerim (Uygulama içine aktarılabilir)',
-        });
-        return;
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-        console.warn("File share failed, trying text share...", err);
-      }
-    }
-
-    // 2. Try Text Sharing (Good for WhatsApp message)
-    if (navigator.share && jsonString.length < 10000) {
+    // 1. Try Native Text Sharing (Most direct for WhatsApp)
+    if (navigator.share) {
       try {
         await navigator.share({
           title: 'Bütçe Verileri',
-          text: `BÜTÇE_VERİSİ:${jsonString}`
+          text: shareText
         });
         return;
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
+        console.warn("Text share failed, trying clipboard...", err);
       }
     }
 
-    // 3. Try WhatsApp Direct Link (Last resort for quick text)
-    if (jsonString.length < 4000) {
-      const waUrl = `https://wa.me/?text=${encodeURIComponent('BÜTÇE_VERİSİ:' + jsonString)}`;
-      window.open(waUrl, '_blank');
-      return;
+    // 2. Fallback: Copy to Clipboard and notify user
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setSyncStatus({ success: true, message: "Veri kopyalandı! Şimdi WhatsApp'a yapıştırıp gönderebilirsiniz." });
+      setTimeout(() => setSyncStatus(null), 3000);
+    } catch (err) {
+      // 3. Last resort: Download
+      handleDownloadFile();
     }
-
-    // 4. Fallback to download if everything else fails
-    handleDownloadFile();
   };
 
   const handleDownloadFile = () => {
