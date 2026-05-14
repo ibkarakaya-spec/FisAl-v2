@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Camera, X, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Camera, X, Check, Loader2, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
@@ -12,6 +12,7 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastFrameRef = useRef<ImageData | null>(null);
   const stillnessCountRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +137,13 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
     return () => clearInterval(interval);
   }, [autoCaptureEnabled, isInitializing, error, isCapturing, capture]);
 
+  const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onCapture(file);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden">
       {/* Video is always in DOM but hidden by loader if initializing */}
@@ -221,7 +229,19 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
 
           {/* Capture Controls */}
           <div className="absolute inset-x-0 bottom-0 p-10 flex items-center justify-center gap-12">
-            <div className="w-12 h-12" /> {/* Layout balancer */}
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition-transform"
+            >
+              <ImageIcon size={20} />
+              <input 
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleGallerySelect}
+              />
+            </button>
             
             <button 
               onClick={capture}

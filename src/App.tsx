@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2, QrCode
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2, QrCode, Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
@@ -621,9 +621,10 @@ const App: React.FC = () => {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => fileInputRef.current?.click()} 
                       disabled={status === AppStatus.PROCESSING} 
-                      className="w-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all"
+                      className="w-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                      title="Galeriden Seç"
                     >
-                       <HardDrive size={18} /> 
+                       <ImageIcon size={18} /> 
                     </motion.button>
                   </div>
                 </div>
