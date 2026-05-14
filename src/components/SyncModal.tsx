@@ -335,9 +335,14 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   };
 
   const isStartingRef = useRef(false);
+  const isTransitioningRef = useRef(false);
 
   const startScanner = async () => {
-    if (isStartingRef.current) return;
+    if (isStartingRef.current || isTransitioningRef.current) {
+      console.warn("Scanner already starting or transitioning");
+      return;
+    }
+    
     const element = document.getElementById("qr-reader");
     if (!element) {
       console.warn("QR reader element not found yet");
@@ -346,12 +351,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
     try {
       isStartingRef.current = true;
+      isTransitioningRef.current = true;
       setIsCameraActive(false);
       
+      // Safety cleanup
       if (scannerRef.current) {
         try {
           if (scannerRef.current.isScanning()) {
             await scannerRef.current.stop();
+            // Critical: give some time for the library to release resources
+            await new Promise(r => setTimeout(r, 200));
           }
         } catch (e) {
           console.warn("Cleanup stop failed", e);
@@ -402,19 +411,25 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       }
     } finally {
       isStartingRef.current = false;
+      isTransitioningRef.current = false;
     }
   };
 
   const stopScanner = async () => {
-    if (!scannerRef.current) return;
+    if (!scannerRef.current || isTransitioningRef.current) return;
     
     try {
+      isTransitioningRef.current = true;
       if (scannerRef.current.isScanning()) {
         await scannerRef.current.stop();
+        // Give space
+        await new Promise(r => setTimeout(r, 100));
       }
       setIsCameraActive(false);
     } catch (err) {
       console.error("Camera stop error", err);
+    } finally {
+      isTransitioningRef.current = false;
     }
   };
 
@@ -465,7 +480,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
         clearTimeout(timer);
         stopScanner();
       };
-    } else if (mode !== 'import') {
+    } else if (mode !== 'import' || useFileFallback) {
       stopScanner();
     }
   }, [mode, useFileFallback]);
