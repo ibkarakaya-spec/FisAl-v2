@@ -43,79 +43,6 @@ const App: React.FC = () => {
     return localStorage.getItem('app_last_selected_month') || "Hepsi";
   });
 
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
-  const [isExportingToDrive, setIsExportingToDrive] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/auth/google/status')
-      .then(r => r.json())
-      .then(data => setIsGoogleConnected(data.connected))
-      .catch(err => console.error(err));
-  }, []);
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS' && event.data.service === 'google_drive') {
-        setIsGoogleConnected(true);
-        alert("Google Drive bağlantısı başarıyla kuruldu!");
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const handleConnectGoogleDrive = async () => {
-    try {
-      const res = await fetch('/api/auth/google/url');
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-        return;
-      }
-      window.open(data.url, 'google_auth', 'width=600,height=700');
-    } catch (e) {
-      console.error(e);
-      alert("Bağlantı URL'i alınamadı. Server ayarlarını kontrol edin.");
-    }
-  };
-
-  const handleExportToGoogleDrive = async () => {
-    if (!isGoogleConnected) {
-      handleConnectGoogleDrive();
-      return;
-    }
-
-    setIsExportingToDrive(true);
-    try {
-      const res = await fetch('/api/drive/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          data: receipts,
-          filename: `fis_ai_full_backup_${new Date().toISOString().split('T')[0]}.json`
-        })
-      });
-      
-      const result = await res.json();
-      if (res.ok) {
-        alert("Veriler Google Drive'a başarıyla yüklendi!");
-      } else {
-        if (res.status === 401) {
-          setIsGoogleConnected(false);
-          alert("Oturum süresi dolmuş. Lütfen tekrar bağlanın.");
-          handleConnectGoogleDrive();
-        } else {
-          alert("Hata: " + (result.error || "Yükleme başarısız."));
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Yükleme sırasında teknik bir hata oluştu.");
-    } finally {
-      setIsExportingToDrive(false);
-    }
-  };
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -763,23 +690,6 @@ const App: React.FC = () => {
                     <button onClick={handleExportData} className="py-3 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-emerald-100">Cihaza Kaydet</button>
                   </div>
                   
-                  <button 
-                    onClick={handleExportToGoogleDrive} 
-                    disabled={isExportingToDrive}
-                    className={`w-full py-3 flex items-center justify-center gap-2.5 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-all ${
-                      isGoogleConnected 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {isExportingToDrive ? (
-                      <Loader2 className="animate-spin" size={14} />
-                    ) : (
-                      <CloudIcon size={14} />
-                    )}
-                    {isGoogleConnected ? "Drive'a Yedekle" : "Google Drive Bağla"}
-                  </button>
-
                   <button 
                     onClick={() => {
                        setShowSettings(false);
