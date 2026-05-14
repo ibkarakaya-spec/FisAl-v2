@@ -71,9 +71,15 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
   const isTooLarge = qrValue.length > 2800; // Limit with compression
 
-  const handleScanSuccess = (decodedText: string) => {
+  const handleScanSuccess = async (decodedText: string) => {
     try {
-      let imported = JSON.parse(decodedText);
+      let dataStr = decodedText;
+      // Handle prefix if shared as text via WhatsApp
+      if (dataStr.startsWith('BÜTÇE_VERİSİ:')) {
+        dataStr = dataStr.replace('BÜTÇE_VERİSİ:', '');
+      }
+
+      let imported = JSON.parse(dataStr);
       
       // Check if it's compressed format
       if (Array.isArray(imported) && imported.length > 0 && imported[0].v !== undefined) {
@@ -93,33 +99,68 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     }
   };
 
+  const handleClipboardImport = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        handleScanSuccess(text);
+      } else {
+        setSyncStatus({ success: false, message: "Pano boş veya erişim izni yok." });
+      }
+    } catch (err) {
+      setSyncStatus({ success: false, message: "Panoya erişilemedi. Lütfen metni buraya yapıştırın." });
+      // In a real app we might show a textarea here if clipboard API fails
+    }
+  };
+
   const handleShareData = async () => {
     const dataToShare = selectedMonth === 'Hepsi' ? receipts : receipts.filter(r => {
       const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
       return rMonth === selectedMonth;
     });
 
+    const jsonString = JSON.stringify(dataToShare);
     const fileName = `butce_paylasim_${new Date().toISOString().split('T')[0]}.json`;
-    const jsonString = JSON.stringify(dataToShare, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const file = new File([blob], fileName, { type: 'application/json' });
 
+    // 1. Try Native File Sharing (Best for mobile app/WhatsApp)
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({
           files: [file],
           title: 'Bütçe Veri Paylaşımı',
-          text: 'İşte bütçe verilerim! Uygulamadan "Resim/Dosyadan Al" seçeneği ile yükleyebilirsin.',
+          text: 'Bütçe verilerim (Uygulama içine aktarılabilir)',
         });
+        return;
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          handleDownloadFile();
-        }
+        if ((err as Error).name === 'AbortError') return;
+        console.warn("File share failed, trying text share...", err);
       }
-    } else {
-      // Fallback to direct download if sharing is not supported
-      handleDownloadFile();
     }
+
+    // 2. Try Text Sharing (Good for WhatsApp message)
+    if (navigator.share && jsonString.length < 10000) {
+      try {
+        await navigator.share({
+          title: 'Bütçe Verileri',
+          text: `BÜTÇE_VERİSİ:${jsonString}`
+        });
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+      }
+    }
+
+    // 3. Try WhatsApp Direct Link (Last resort for quick text)
+    if (jsonString.length < 4000) {
+      const waUrl = `https://wa.me/?text=${encodeURIComponent('BÜTÇE_VERİSİ:' + jsonString)}`;
+      window.open(waUrl, '_blank');
+      return;
+    }
+
+    // 4. Fallback to download if everything else fails
+    handleDownloadFile();
   };
 
   const handleDownloadFile = () => {
@@ -394,12 +435,20 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                   </div>
                   
                   {!useFileFallback && (
-                    <button 
-                      onClick={() => setUseFileFallback(true)}
-                      className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg"
-                    >
-                      Resim Yükle
-                    </button>
+                    <div className="flex gap-2">
+                       <button 
+                        onClick={handleClipboardImport}
+                        className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-lg"
+                      >
+                        Panodan Al
+                      </button>
+                      <button 
+                        onClick={() => setUseFileFallback(true)}
+                        className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-lg"
+                      >
+                        Resim/Dosya
+                      </button>
+                    </div>
                   )}
                 </div>
 
