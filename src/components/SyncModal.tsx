@@ -334,39 +334,49 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     downloadAnchorNode.remove();
   };
 
-  const isStartingRef = useRef(false);
+  // Use state for UI feedback on transition
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const isTransitioningRef = useRef(false);
 
   const startScanner = async () => {
-    if (isStartingRef.current || isTransitioningRef.current) {
-      console.warn("Scanner already starting or transitioning");
+    if (isTransitioningRef.current) {
+      console.warn("Scanner is transitioning, skipping start call");
       return;
     }
     
     const element = document.getElementById("qr-reader");
-    if (!element) {
-      console.warn("QR reader element not found yet");
-      return;
-    }
+    if (!element) return;
 
     try {
-      isStartingRef.current = true;
       isTransitioningRef.current = true;
+      setIsTransitioning(true);
       setIsCameraActive(false);
       
-      // Safety cleanup
-      if (scannerRef.current) {
+      // If scanner exists but is in a weird state, it might throw
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode("qr-reader");
+      } else {
+        // Safe check for scanning state
+        let isActuallyScanning = false;
         try {
-          if (scannerRef.current.isScanning()) {
-            await scannerRef.current.stop();
-            // Critical: give some time for the library to release resources
-            await new Promise(r => setTimeout(r, 200));
+          const scanner = scannerRef.current as any;
+          if (typeof scanner.isScanning === 'function') {
+            isActuallyScanning = scanner.isScanning();
+          } else if (typeof scanner.getState === 'function') {
+            isActuallyScanning = scanner.getState() === 2; // 2 is SCANNING in html5-qrcode
           }
         } catch (e) {
-          console.warn("Cleanup stop failed", e);
+          console.warn("Error checking scanner state", e);
         }
-      } else {
-        scannerRef.current = new Html5Qrcode("qr-reader");
+
+        if (isActuallyScanning) {
+          try {
+            await scannerRef.current.stop();
+            await new Promise(r => setTimeout(r, 400));
+          } catch (e) {
+            console.warn("Stop before start failed (ignoring)", e);
+          }
+        }
       }
 
       const config = {
@@ -379,6 +389,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
         aspectRatio: 1.0
       };
 
+      // Try starting
       try {
         await scannerRef.current.start(
           { facingMode: { ideal: "environment" } },
@@ -387,8 +398,23 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
           () => {} // Ignore scan errors
         );
       } catch (err) {
-        console.warn("Starting with ideal environment failed, trying simple environment...", err);
-        // Fallback to simple environment
+        console.warn("Ideal environment start failed, trying simple...", err);
+        
+        // Safety: ensure we stop before re-attempting with another config
+        try {
+          const scanner = scannerRef.current as any;
+          let isScanningNow = false;
+          if (typeof scanner.isScanning === 'function') isScanningNow = scanner.isScanning();
+          else if (typeof scanner.getState === 'function') isScanningNow = scanner.getState() === 2;
+          
+          if (isScanningNow) {
+            await scannerRef.current.stop();
+            await new Promise(r => setTimeout(r, 200));
+          }
+        } catch (e) {}
+        
+        // Re-instance for fresh state machine
+        scannerRef.current = new Html5Qrcode("qr-reader");
         await scannerRef.current.start(
           { facingMode: "environment" },
           config,
@@ -399,19 +425,28 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
       setIsCameraActive(true);
       setSyncStatus(null);
-    } catch (err) {
-      console.error("Final camera start error", err);
+    } catch (err: any) {
+      console.error("Scanner start final fail:", err);
       setIsCameraActive(false);
       
+      const errMsg = err?.message || String(err);
       if (mode === 'import' && !useFileFallback) {
+        let message = "Kamera erişilemiyor. Lütfen izinleri kontrol edin veya resim seçerek tarayın.";
+        
+        if (errMsg.toLowerCase().includes("permission") || errMsg.toLowerCase().includes("notallowed")) {
+          message = "Kamera izni reddedildi. Lütfen tarayıcı adres çubuğundaki kilit simgesine tıklayarak kamera iznini aktif hale getirin.";
+        } else if (errMsg.toLowerCase().includes("notfound") || errMsg.toLowerCase().includes("readable")) {
+          message = "Kamera bulunamadı veya başka bir uygulama tarafından kullanılıyor.";
+        }
+
         setSyncStatus({ 
           success: false, 
-          message: "Kamera erişimi engellendi veya cihazda kamera bulunamadı. Lütfen tarayıcı izinlerini kontrol edin veya resim seçerek tarayın." 
+          message 
         });
       }
     } finally {
-      isStartingRef.current = false;
       isTransitioningRef.current = false;
+      setIsTransitioning(false);
     }
   };
 
@@ -420,16 +455,35 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     
     try {
       isTransitioningRef.current = true;
-      if (scannerRef.current.isScanning()) {
-        await scannerRef.current.stop();
-        // Give space
-        await new Promise(r => setTimeout(r, 100));
+      setIsTransitioning(true);
+      
+      let isActuallyScanning = false;
+      try {
+        const scanner = scannerRef.current as any;
+        if (typeof scanner.isScanning === 'function') {
+          isActuallyScanning = scanner.isScanning();
+        } else if (typeof scanner.getState === 'function') {
+          isActuallyScanning = scanner.getState() === 2;
+        }
+      } catch (e) {
+        // If we can't check, assume it might be scanning if we thought it was
+        isActuallyScanning = isCameraActive;
       }
-      setIsCameraActive(false);
+
+      if (isActuallyScanning) {
+        try {
+          await scannerRef.current.stop();
+          await new Promise(r => setTimeout(r, 300));
+        } catch (e) {
+          console.warn("Stop failed (ignoring as likely already stopped)", e);
+        }
+      }
     } catch (err) {
-      console.error("Camera stop error", err);
+      console.error("Scanner stop failed logic:", err);
     } finally {
+      setIsCameraActive(false);
       isTransitioningRef.current = false;
+      setIsTransitioning(false);
     }
   };
 
@@ -725,11 +779,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                       </p>
                       <button 
                         onClick={startScanner}
-                        disabled={isStartingRef.current}
+                        disabled={isTransitioning}
                         className="bg-indigo-600 active:bg-indigo-700 disabled:opacity-50 text-white px-8 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-xl flex items-center gap-2"
                       >
-                        {isStartingRef.current ? <RefreshCw size={16} className="animate-spin" /> : <Scan size={16} />}
-                        {isStartingRef.current ? "Başlatılıyor..." : "Kamerayı Başlat"}
+                        {isTransitioning ? <RefreshCw size={16} className="animate-spin" /> : <Scan size={16} />}
+                        {isTransitioning ? "Başlatılıyor..." : "Kamerayı Başlat"}
                       </button>
                     </div>
                   )}
