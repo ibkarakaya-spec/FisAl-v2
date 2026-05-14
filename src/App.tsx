@@ -13,6 +13,8 @@ import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
 import { SyncModal } from './components/SyncModal.tsx';
 import { CameraCapture } from './components/CameraCapture.tsx';
+import { ManualEntryModal } from './components/ManualEntryModal.tsx';
+import { Keyboard } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(false);
@@ -33,6 +35,7 @@ const App: React.FC = () => {
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
@@ -610,11 +613,21 @@ const App: React.FC = () => {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setShowCamera(true)} 
                       disabled={status === AppStatus.PROCESSING} 
-                      className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
+                      className="flex-[2] bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
                     >
                        <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                        <Camera size={18} className="relative z-10" /> 
                        <span className="text-[13px] font-medium uppercase tracking-widest relative z-10">Fiş Tara</span>
+                    </motion.button>
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowManualEntry(true)} 
+                      disabled={status === AppStatus.PROCESSING} 
+                      className="w-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                      title="Manuel Ekle"
+                    >
+                       <Keyboard size={18} /> 
                     </motion.button>
                     <motion.button 
                       whileHover={{ scale: 1.02 }}
@@ -783,6 +796,15 @@ const App: React.FC = () => {
               onClose={() => setShowCamera(false)}
             />
           )}
+
+          <ManualEntryModal 
+            isOpen={showManualEntry}
+            onClose={() => setShowManualEntry(false)}
+            categories={categories}
+            onAdd={(data) => {
+              setReceipts(prev => [data, ...prev]);
+            }}
+          />
 
           {selectedReceipt && (
             <ReceiptDetailModal 
