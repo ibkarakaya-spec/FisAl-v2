@@ -200,6 +200,7 @@ const App: React.FC = () => {
     
     let dupeCount = 0;
     const formattedReceipts: ReceiptData[] = [];
+    const newCategories = new Set<string>();
 
     imported.forEach((r: any) => {
       const rawPrice = r.total ?? r.price ?? r.ucret ?? r.amount;
@@ -212,13 +213,16 @@ const App: React.FC = () => {
         return;
       }
       
+      const category = (r.category || r.kategori || 'Gıda ve Market').trim();
+      newCategories.add(category);
+
       formattedReceipts.push({
         id,
         vendor: (r.vendor || r.market || 'BİLİNMEYEN').toUpperCase(),
         date: r.date || r.tarih || new Date().toLocaleDateString('tr-TR'),
         total: parsedPrice,
         currency: r.currency || '₺',
-        category: r.category || r.kategori || 'Gıda ve Market',
+        category,
         tax: r.tax || 0,
         items: Array.isArray(r.items) ? r.items : [],
         confidence: r.confidence || 1,
@@ -229,7 +233,19 @@ const App: React.FC = () => {
 
     if (formattedReceipts.length > 0) {
       setReceipts(prev => [...prev, ...formattedReceipts]);
-      // Success will be shown by SyncModal
+      
+      // Update categories if new ones found
+      setCategories(prev => {
+        const current = new Set(prev);
+        let changed = false;
+        newCategories.forEach(cat => {
+          if (!current.has(cat)) {
+            current.add(cat);
+            changed = true;
+          }
+        });
+        return changed ? Array.from(current) : prev;
+      });
     }
   };
 

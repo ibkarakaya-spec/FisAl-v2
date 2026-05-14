@@ -34,7 +34,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to compress/decompress data for QR
-  const compressData = (data: any[]) => {
+  const compressData = (data: ReceiptData[]) => {
     return data.map(r => ({
       v: r.vendor,
       d: r.date,
@@ -42,7 +42,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       c: r.category,
       u: r.currency,
       s: r.timestamp,
-      i: r.id
+      i: r.id,
+      x: r.tax,
+      m: (r.items || []).map(item => ({
+        n: item.name,
+        p: item.price,
+        q: item.quantity
+      }))
     }));
   };
 
@@ -50,13 +56,17 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     return data.map(r => ({
       vendor: r.v,
       date: r.d,
-      total: r.t,
+      total: Number(r.t) || 0,
       category: r.c,
-      currency: r.u,
-      timestamp: r.s,
-      id: r.i,
-      tax: 0,
-      items: [],
+      currency: r.u || '₺',
+      timestamp: r.s || Date.now(),
+      id: r.i || Math.random().toString(36).substr(2, 9),
+      tax: r.x || 0,
+      items: (r.m || []).map((item: any) => ({
+        name: item.n,
+        price: Number(item.p) || 0,
+        quantity: Number(item.q) || 1
+      })),
       confidence: 1
     }));
   };
