@@ -334,61 +334,87 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     downloadAnchorNode.remove();
   };
 
+  const isStartingRef = useRef(false);
+
   const startScanner = async () => {
+    if (isStartingRef.current) return;
     const element = document.getElementById("qr-reader");
-    if (!element) return;
+    if (!element) {
+      console.warn("QR reader element not found yet");
+      return;
+    }
 
     try {
-      if (scannerRef.current && scannerRef.current.isScanning()) {
-        await scannerRef.current.stop();
-      }
+      isStartingRef.current = true;
+      setIsCameraActive(false);
       
-      if (!scannerRef.current) {
+      if (scannerRef.current) {
+        try {
+          if (scannerRef.current.isScanning()) {
+            await scannerRef.current.stop();
+          }
+        } catch (e) {
+          console.warn("Cleanup stop failed", e);
+        }
+      } else {
         scannerRef.current = new Html5Qrcode("qr-reader");
       }
 
-      await scannerRef.current.start(
-        { facingMode: { ideal: "environment" } },
-        {
-          fps: 15,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const qrboxSize = Math.floor(minEdge * 0.7);
-            return { width: qrboxSize, height: qrboxSize };
-          },
-          aspectRatio: 1.0
+      const config = {
+        fps: 15,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const qrboxSize = Math.floor(minEdge * 0.7);
+          return { width: qrboxSize, height: qrboxSize };
         },
-        handleScanSuccess,
-        () => {} // Ignore scan errors
-      );
+        aspectRatio: 1.0
+      };
+
+      try {
+        await scannerRef.current.start(
+          { facingMode: { ideal: "environment" } },
+          config,
+          handleScanSuccess,
+          () => {} // Ignore scan errors
+        );
+      } catch (err) {
+        console.warn("Starting with ideal environment failed, trying simple environment...", err);
+        // Fallback to simple environment
+        await scannerRef.current.start(
+          { facingMode: "environment" },
+          config,
+          handleScanSuccess,
+          () => {}
+        );
+      }
+
       setIsCameraActive(true);
       setSyncStatus(null);
     } catch (err) {
-      console.error("Camera start error", err);
+      console.error("Final camera start error", err);
       setIsCameraActive(false);
       
-      // If native camera fails, automatically try to show file fallback 
-      // but only if it's a real failure, not a planned stop
-      if (mode === 'import') {
-        setUseFileFallback(true);
+      if (mode === 'import' && !useFileFallback) {
         setSyncStatus({ 
           success: false, 
-          message: "Kamera başlatılamadı. İzinlerinizi kontrol edin veya resim seçerek tarayın." 
+          message: "Kamera erişimi engellendi veya cihazda kamera bulunamadı. Lütfen tarayıcı izinlerini kontrol edin veya resim seçerek tarayın." 
         });
       }
+    } finally {
+      isStartingRef.current = false;
     }
   };
 
   const stopScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning()) {
-          await scannerRef.current.stop();
-        }
-        setIsCameraActive(false);
-      } catch (err) {
-        console.error("Camera stop error", err);
+    if (!scannerRef.current) return;
+    
+    try {
+      if (scannerRef.current.isScanning()) {
+        await scannerRef.current.stop();
       }
+      setIsCameraActive(false);
+    } catch (err) {
+      console.error("Camera stop error", err);
     }
   };
 
@@ -676,7 +702,24 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                 <div className="relative rounded-[32px] overflow-hidden bg-slate-900 aspect-square border border-slate-200 dark:border-slate-800">
                   <div id="qr-reader" className={`w-full h-full ${useFileFallback ? 'hidden' : 'block'}`}></div>
                   
-                  {!useFileFallback && importTotal > 0 && !syncStatus && (
+                  {!useFileFallback && !isCameraActive && !syncStatus && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white/60">
+                      <Camera size={48} className="mb-4 opacity-20" />
+                      <p className="text-xs mb-6 px-8 leading-relaxed">
+                        Kamera otomatik olarak başlatılamadıysa aşağıdaki butona dokunun.
+                      </p>
+                      <button 
+                        onClick={startScanner}
+                        disabled={isStartingRef.current}
+                        className="bg-indigo-600 active:bg-indigo-700 disabled:opacity-50 text-white px-8 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-xl flex items-center gap-2"
+                      >
+                        {isStartingRef.current ? <RefreshCw size={16} className="animate-spin" /> : <Scan size={16} />}
+                        {isStartingRef.current ? "Başlatılıyor..." : "Kamerayı Başlat"}
+                      </button>
+                    </div>
+                  )}
+
+                  {!useFileFallback && importTotal > 0 && !syncStatus && isCameraActive && (
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
                       <div className="bg-indigo-600/90 text-white px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-lg border border-white/20">
                         {Object.keys(importChunks).length} / {importTotal} Parça Okundu
