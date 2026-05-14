@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
@@ -11,6 +11,7 @@ import { ProductHistory } from './components/ProductHistory.tsx';
 import { BudgetManager } from './components/BudgetManager.tsx';
 import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
+import { SyncModal } from './components/SyncModal.tsx';
 
 const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(false);
@@ -29,6 +30,7 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem('app_theme') as ThemeMode) || 'system');
   const [showSettings, setShowSettings] = useState(false);
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const [showSyncModal, setShowSyncModal] = useState(false);
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
@@ -182,6 +184,47 @@ const App: React.FC = () => {
       linkElement.click();
     } catch (e) {
       alert("Dışa aktarma hatası.");
+    }
+  };
+
+  const handleSyncImport = (imported: ReceiptData[]) => {
+    if (!Array.isArray(imported)) return;
+    
+    const existingIds = new Set(receipts.map(r => r.id));
+    const existingSignatures = new Set(receipts.map(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}`));
+    
+    let dupeCount = 0;
+    const formattedReceipts: ReceiptData[] = [];
+
+    imported.forEach((r: any) => {
+      const rawPrice = r.total ?? r.price ?? r.ucret ?? r.amount;
+      const parsedPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(',', '.')) || 0;
+      const id = r.id || Math.random().toString(36).substr(2, 9);
+      const signature = `${(r.vendor || r.market || 'BİLİNMEYEN').toUpperCase()}|${r.date || r.tarih || ''}|${parsedPrice}`;
+
+      if (existingIds.has(id) || existingSignatures.has(signature)) {
+        dupeCount++;
+        return;
+      }
+      
+      formattedReceipts.push({
+        id,
+        vendor: (r.vendor || r.market || 'BİLİNMEYEN').toUpperCase(),
+        date: r.date || r.tarih || new Date().toLocaleDateString('tr-TR'),
+        total: parsedPrice,
+        currency: r.currency || '₺',
+        category: r.category || r.kategori || 'Gıda ve Market',
+        tax: r.tax || 0,
+        items: Array.isArray(r.items) ? r.items : [],
+        confidence: r.confidence || 1,
+        timestamp: r.timestamp || Date.now(),
+        imageUrl: r.imageUrl
+      });
+    });
+
+    if (formattedReceipts.length > 0) {
+      setReceipts(prev => [...prev, ...formattedReceipts]);
+      // Success will be shown by SyncModal
     }
   };
 
@@ -681,10 +724,30 @@ const App: React.FC = () => {
                     {isGoogleConnected ? "Drive'a Yedekle" : "Google Drive Bağla"}
                   </button>
 
+                  <button 
+                    onClick={() => {
+                       setShowSettings(false);
+                       setShowSyncModal(true);
+                    }}
+                    className="w-full py-3 flex items-center justify-center gap-2.5 bg-indigo-600 text-white rounded-xl text-[11px] font-medium uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-95"
+                  >
+                    <QrCode size={14} />
+                    QR ile Eşitle (Offline)
+                  </button>
+
                   <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
                 </div>
               </div>
             </div>
+          )}
+
+          {showSyncModal && (
+            <SyncModal 
+              receipts={receipts}
+              availableMonths={availableMonths}
+              onClose={() => setShowSyncModal(false)}
+              onImport={handleSyncImport}
+            />
           )}
 
           {selectedReceipt && (
