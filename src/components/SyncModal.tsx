@@ -53,22 +53,38 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   };
 
   const decompressData = (data: any[]) => {
-    return data.map(r => ({
-      vendor: r.v,
-      date: r.d,
-      total: Number(r.t) || 0,
-      category: r.c,
-      currency: r.u || '₺',
-      timestamp: r.s || Date.now(),
-      id: r.i || Math.random().toString(36).substr(2, 9),
-      tax: r.x || 0,
-      items: (r.m || []).map((item: any) => ({
-        name: item.n,
-        price: Number(item.p) || 0,
-        quantity: Number(item.q) || 1
-      })),
-      confidence: 1
-    }));
+    if (!Array.isArray(data)) return [];
+    
+    return data.map(r => {
+      // If it looks like compressed format (v is vendor key)
+      if (r && typeof r === 'object' && 'v' in r) {
+        return {
+          vendor: String(r.v || 'BİLİNMEYEN').toUpperCase(),
+          date: String(r.d || new Date().toLocaleDateString('tr-TR')),
+          total: Number(r.t) || 0,
+          category: String(r.c || 'Diğer'),
+          currency: String(r.u || '₺'),
+          timestamp: Number(r.s) || Date.now(),
+          id: String(r.i || Math.random().toString(36).substr(2, 9)),
+          tax: Number(r.x) || 0,
+          items: Array.isArray(r.m) ? r.m.map((item: any) => ({
+            name: String(item.n || 'Ürün'),
+            price: Number(item.p) || 0,
+            quantity: Number(item.q) || 1
+          })) : [],
+          confidence: 1
+        };
+      }
+      
+      // Fallback for raw format
+      return {
+        ...r,
+        vendor: String(r.vendor || r.market || 'BİLİNMEYEN').toUpperCase(),
+        total: Number(r.total || 0),
+        items: Array.isArray(r.items) ? r.items : [],
+        id: r.id || Math.random().toString(36).substr(2, 9)
+      } as ReceiptData;
+    });
   };
 
   // Filter receipts for export
@@ -87,7 +103,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       const fullData = JSON.stringify(exportData);
       
       // If data is small enough, return as is
-      if (fullData.length <= 2000) {
+      if (fullData.length <= 1500) {
         return fullData;
       }
       
@@ -180,22 +196,36 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
   const finalizeImport = (dataStr: string) => {
     try {
+      let cleanStr = dataStr.trim();
+      
       // Find the first '[' and last ']' to isolate the JSON array
-      const firstBracket = dataStr.indexOf('[');
-      const lastBracket = dataStr.lastIndexOf(']');
+      const firstBracket = cleanStr.indexOf('[');
+      const lastBracket = cleanStr.lastIndexOf(']');
       
       if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
-        dataStr = dataStr.substring(firstBracket, lastBracket + 1);
+        cleanStr = cleanStr.substring(firstBracket, lastBracket + 1);
       }
 
-      let imported = JSON.parse(dataStr);
+      let imported;
+      try {
+        imported = JSON.parse(cleanStr);
+      } catch (parseError) {
+        console.error("JSON parse failed", parseError);
+        setSyncStatus({ success: false, message: "Veri formatı hatalı. Lütfen QR kodu tam okuttuğunuzdan emin olun." });
+        return;
+      }
       
-      // Check if it's compressed format (v: vendor, d: date, etc)
-      if (Array.isArray(imported) && imported.length > 0 && typeof imported[0] === 'object' && 'v' in imported[0]) {
+      // Check if it's compressed format
+      if (Array.isArray(imported) && imported.length > 0 && typeof imported[0] === 'object' && ('v' in imported[0] || 'vendor' in imported[0])) {
         imported = decompressData(imported);
       }
 
       if (Array.isArray(imported)) {
+        if (imported.length === 0) {
+          setSyncStatus({ success: false, message: "Aktarılacak kayıt bulunamadı." });
+          return;
+        }
+        
         onImport(imported as ReceiptData[]);
         setSyncStatus({ success: true, message: `${imported.length} kayıt başarıyla aktarıldı.` });
         stopScanner();
@@ -205,11 +235,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
           setImportTotal(0);
         }, 2000);
       } else {
-        setSyncStatus({ success: false, message: "Veri listesi bulunamadı." });
+        setSyncStatus({ success: false, message: "Veri bir liste (Array) olmalı." });
       }
     } catch (e) {
-      console.error("Finalize parse error:", e);
-      setSyncStatus({ success: false, message: "Veri çözümlenemedi." });
+      console.error("Finalize import error:", e);
+      setSyncStatus({ success: false, message: "Bilinmeyen bir hata oluştu." });
     }
   };
 
@@ -395,6 +425,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   };
 
   useEffect(() => {
+    if (mode === 'import') {
+      setImportChunks({});
+      setImportTotal(0);
+      setSyncStatus(null);
+    }
+    
     if (mode === 'import' && !useFileFallback) {
       const timer = setTimeout(() => {
         startScanner();

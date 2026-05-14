@@ -46,7 +46,7 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -54,49 +54,12 @@ const App: React.FC = () => {
       try {
         const imported = JSON.parse(event.target?.result as string);
         if (Array.isArray(imported)) {
-          const existingIds = new Set(receipts.map(r => r.id));
-          const existingSignatures = new Set(receipts.map(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}`));
-          
-          let dupeCount = 0;
-          const formattedReceipts: ReceiptData[] = [];
-
-          imported.forEach((r: any) => {
-            const rawPrice = r.total ?? r.price ?? r.ucret ?? r.amount;
-            const parsedPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(',', '.')) || 0;
-            const id = r.id || Math.random().toString(36).substr(2, 9);
-            const signature = `${(r.vendor || r.market || 'BİLİNMEYEN').toUpperCase()}|${r.date || r.tarih || ''}|${parsedPrice}`;
-
-            if (existingIds.has(id) || existingSignatures.has(signature)) {
-              dupeCount++;
-              return;
-            }
-            
-            formattedReceipts.push({
-              id,
-              vendor: (r.vendor || r.market || 'BİLİNMEYEN').toUpperCase(),
-              date: r.date || r.tarih || new Date().toLocaleDateString('tr-TR'),
-              total: parsedPrice,
-              currency: r.currency || '₺',
-              category: r.category || r.kategori || 'Gıda ve Market',
-              tax: r.tax || 0,
-              items: Array.isArray(r.items) ? r.items : [],
-              confidence: r.confidence || 1,
-              timestamp: r.timestamp || Date.now(),
-              imageUrl: r.imageUrl
-            });
-          });
-
-          if (formattedReceipts.length > 0) {
-            setReceipts(prev => [...prev, ...formattedReceipts]);
-            alert(`${formattedReceipts.length} yeni fiş aktarıldı.${dupeCount > 0 ? ` (${dupeCount} kopya atlandı)` : ''}`);
-          } else if (dupeCount > 0) {
-            alert("Tüm fişler zaten mevcut. Hiçbir yeni veri eklenmedi.");
-          } else {
-            alert("Aktarılacak geçerli veri bulunamadı.");
-          }
+          handleSyncImport(imported);
+        } else {
+          alert("Geçersiz dosya formatı: Veri listesi (Array) olmalı.");
         }
       } catch (e) {
-        alert("Geçersiz dosya formatı.");
+        alert("Dosya okunamadı veya JSON formatı hatalı.");
       }
     };
     reader.readAsText(file);
@@ -120,59 +83,74 @@ const App: React.FC = () => {
   };
 
   const handleSyncImport = (imported: ReceiptData[]) => {
-    if (!Array.isArray(imported)) return;
-    
-    const existingIds = new Set(receipts.map(r => r.id));
-    const existingSignatures = new Set(receipts.map(r => `${r.vendor.toUpperCase()}|${r.date}|${r.total}`));
-    
-    let dupeCount = 0;
-    const formattedReceipts: ReceiptData[] = [];
-    const newCategories = new Set<string>();
-
-    imported.forEach((r: any) => {
-      const rawPrice = r.total ?? r.price ?? r.ucret ?? r.amount;
-      const parsedPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(',', '.')) || 0;
-      const id = r.id || Math.random().toString(36).substr(2, 9);
-      const signature = `${(r.vendor || r.market || 'BİLİNMEYEN').toUpperCase()}|${r.date || r.tarih || ''}|${parsedPrice}`;
-
-      if (existingIds.has(id) || existingSignatures.has(signature)) {
-        dupeCount++;
+    try {
+      if (!Array.isArray(imported)) {
+        console.warn("Sync import: data is not an array");
         return;
       }
       
-      const category = (r.category || r.kategori || 'Gıda ve Market').trim();
-      newCategories.add(category);
-
-      formattedReceipts.push({
-        id,
-        vendor: (r.vendor || r.market || 'BİLİNMEYEN').toUpperCase(),
-        date: r.date || r.tarih || new Date().toLocaleDateString('tr-TR'),
-        total: parsedPrice,
-        currency: r.currency || '₺',
-        category,
-        tax: r.tax || 0,
-        items: Array.isArray(r.items) ? r.items : [],
-        confidence: r.confidence || 1,
-        timestamp: r.timestamp || Date.now(),
-        imageUrl: r.imageUrl
-      });
-    });
-
-    if (formattedReceipts.length > 0) {
-      setReceipts(prev => [...prev, ...formattedReceipts]);
+      const existingIds = new Set(receipts.map(r => String(r.id)));
+      const existingSignatures = new Set(receipts.map(r => 
+        `${r.vendor.toUpperCase().trim()}|${r.date.trim()}|${Number(r.total).toFixed(2)}`
+      ));
       
-      // Update categories if new ones found
-      setCategories(prev => {
-        const current = new Set(prev);
-        let changed = false;
-        newCategories.forEach(cat => {
-          if (!current.has(cat)) {
-            current.add(cat);
-            changed = true;
-          }
+      let dupeCount = 0;
+      const formattedReceipts: ReceiptData[] = [];
+      const newCategories = new Set<string>();
+
+      imported.forEach((r: any) => {
+        if (!r) return;
+        
+        const rawPrice = r.total ?? r.price ?? r.ucret ?? r.amount;
+        const parsedPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(',', '.')) || 0;
+        
+        const id = String(r.id || Math.random().toString(36).substr(2, 9));
+        const vendor = String(r.vendor || r.market || 'BİLİNMEYEN').toUpperCase().trim();
+        const date = String(r.date || r.tarih || new Date().toLocaleDateString('tr-TR')).trim();
+        
+        const signature = `${vendor}|${date}|${parsedPrice.toFixed(2)}`;
+
+        if (existingIds.has(id) || existingSignatures.has(signature)) {
+          dupeCount++;
+          return;
+        }
+        
+        const category = String(r.category || r.kategori || 'Gıda ve Market').trim();
+        newCategories.add(category);
+
+        formattedReceipts.push({
+          id,
+          vendor,
+          date,
+          total: parsedPrice,
+          currency: r.currency || '₺',
+          category,
+          tax: r.tax || 0,
+          items: Array.isArray(r.items) ? r.items : [],
+          confidence: r.confidence || 1,
+          timestamp: r.timestamp || Date.now(),
+          imageUrl: r.imageUrl
         });
-        return changed ? Array.from(current) : prev;
       });
+
+      if (formattedReceipts.length > 0) {
+        setReceipts(prev => [...prev, ...formattedReceipts]);
+        
+        // Update categories if new ones found
+        setCategories(prev => {
+          const current = new Set(prev);
+          let changed = false;
+          newCategories.forEach(cat => {
+            if (!current.has(cat)) {
+              current.add(cat);
+              changed = true;
+            }
+          });
+          return changed ? Array.from(current) : prev;
+        });
+      }
+    } catch (err) {
+      console.error("Sync import failed:", err);
     }
   };
 
@@ -701,7 +679,7 @@ const App: React.FC = () => {
                     QR ile Eşitle (Offline)
                   </button>
 
-                  <input type="file" ref={importInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+                  <input type="file" ref={importInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
                 </div>
               </div>
             </div>
