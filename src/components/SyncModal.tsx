@@ -75,18 +75,27 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     try {
       let dataStr = decodedText.trim();
       
-      // Handle prefix if shared as text via WhatsApp
-      // Using regex to be more robust against extra text (timestamps etc)
-      const match = dataStr.match(/BÜTÇE_VERİSİ:(\[.*\]|{.*})/);
-      if (match) {
-        dataStr = match[1];
-      } else if (dataStr.startsWith('BÜTÇE_VERİSİ:')) {
-        dataStr = dataStr.replace('BÜTÇE_VERİSİ:', '');
+      // WhatsApp adds newlines and sometimes timestamps. 
+      // We need to look for the pattern and extract the JSON part even if it spans multiple lines.
+      const prefix = 'BÜTÇE_VERİSİ:';
+      const startIndex = dataStr.indexOf(prefix);
+      
+      if (startIndex !== -1) {
+        // Extract everything after the prefix
+        dataStr = dataStr.substring(startIndex + prefix.length).trim();
+      }
+
+      // Find the first '[' and last ']' to isolate the JSON array
+      const firstBracket = dataStr.indexOf('[');
+      const lastBracket = dataStr.lastIndexOf(']');
+      
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        dataStr = dataStr.substring(firstBracket, lastBracket + 1);
       }
 
       let imported = JSON.parse(dataStr);
       
-      // Check if it's compressed format
+      // Check if it's compressed format (v: vendor, d: date, etc)
       if (Array.isArray(imported) && imported.length > 0 && typeof imported[0] === 'object' && 'v' in imported[0]) {
         imported = decompressData(imported);
       }
@@ -97,10 +106,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
         stopScanner();
         setTimeout(() => setMode('selection'), 2000);
       } else {
-        setSyncStatus({ success: false, message: "Geçersiz veri formatı." });
+        setSyncStatus({ success: false, message: "Veri listesi bulunamadı." });
       }
     } catch (e) {
-      setSyncStatus({ success: false, message: "Veri okunamadı veya geçersiz veri içeriyor." });
+      console.error("Parse error:", e);
+      setSyncStatus({ success: false, message: "Veri okunamadı. Lütfen metnin tamamını kopyaladığınızdan emin olun." });
     }
   };
 
