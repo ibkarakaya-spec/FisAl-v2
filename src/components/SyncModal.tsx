@@ -148,16 +148,33 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       return rMonth === selectedMonth;
     });
 
-    // Use compressed version for sharing to stay within limits
-    const jsonString = JSON.stringify(compressData(dataToShare));
-    const shareText = `BÜTÇE_VERİSİ:${jsonString}`;
+    const fileName = `butce_paylasim_${new Date().toISOString().split('T')[0]}.json`;
+    const jsonString = JSON.stringify(dataToShare, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const file = new File([blob], fileName, { type: 'application/json' });
 
-    // 1. Try Native Text Sharing (Most direct for WhatsApp)
+    // 1. Try Native File Sharing (Best for mobile app/WhatsApp)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Bütçe Veri Paylaşımı',
+          text: 'Bütçe verilerim (Uygulama içine aktarılabilir)',
+        });
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+        console.warn("File share failed, trying text share...", err);
+      }
+    }
+
+    // 2. Try Text Sharing (Compressed message)
+    const compressedText = `BÜTÇE_VERİSİ:${JSON.stringify(compressData(dataToShare))}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Bütçe Verileri',
-          text: shareText
+          text: compressedText
         });
         return;
       } catch (err) {
@@ -166,13 +183,13 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       }
     }
 
-    // 2. Fallback: Copy to Clipboard and notify user
+    // 3. Last fallback: Copy to Clipboard
     try {
-      await navigator.clipboard.writeText(shareText);
-      setSyncStatus({ success: true, message: "Veri kopyalandı! Şimdi WhatsApp'a yapıştırıp gönderebilirsiniz." });
+      await navigator.clipboard.writeText(compressedText);
+      setSyncStatus({ success: true, message: "Veri paylaşılamadı ama kopyalandı! WhatsApp'a yapıştırabilirsiniz." });
       setTimeout(() => setSyncStatus(null), 3000);
     } catch (err) {
-      // 3. Last resort: Download
+      // 4. Last resort: Download
       handleDownloadFile();
     }
   };
@@ -233,18 +250,31 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setSyncStatus({ message: "Dosya inceleniyor..." });
+
+    // IF JSON FILE: Read directly as text
+    if (file.type === 'application/json' || file.name.endsWith('.json')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        handleScanSuccess(text);
+      };
+      reader.onerror = () => setSyncStatus({ success: false, message: "Dosya okuma hatası." });
+      reader.readAsText(file);
+      return;
+    }
+
+    // IF IMAGE: Try QR Scan
     if (!scannerRef.current) {
       scannerRef.current = new Html5Qrcode("qr-reader");
     }
-
-    setSyncStatus({ message: "Resim taranıyor..." });
 
     try {
       const decodedText = await scannerRef.current.scanFile(file, true);
       handleScanSuccess(decodedText);
     } catch (err) {
       console.error("File scan error", err);
-      setSyncStatus({ success: false, message: "Resimde QR kod bulunamadı." });
+      setSyncStatus({ success: false, message: "Fotoğrafta QR kod bulunamadı veya dosya geçersiz." });
     }
   };
 
