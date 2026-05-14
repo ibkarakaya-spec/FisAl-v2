@@ -12,6 +12,7 @@ import { BudgetManager } from './components/BudgetManager.tsx';
 import { autoEnhance } from './services/imageProcessing.ts';
 import { ConfirmModal } from './components/ConfirmModal.tsx';
 import { SyncModal } from './components/SyncModal.tsx';
+import { CameraCapture } from './components/CameraCapture.tsx';
 
 const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(false);
@@ -31,6 +32,7 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
@@ -427,6 +429,19 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCameraCapture = async (blob: Blob) => {
+    setShowCamera(false);
+    setStatus(AppStatus.PROCESSING);
+    try {
+      const file = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await processFile(file);
+    } catch (err) {
+      console.error("Kamera Kayıt Hatası:", err);
+    } finally {
+      setStatus(AppStatus.IDLE);
+    }
+  };
+
   const handleToggleSelect = (id: string) => {
     setSelectedIds(prev => 
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -589,17 +604,28 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => fileInputRef.current?.click()} 
-                    disabled={status === AppStatus.PROCESSING} 
-                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
-                  >
-                     <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                     <Plus size={18} className="relative z-10" /> 
-                     <span className="text-[13px] font-medium uppercase tracking-widest relative z-10">Fiş Tara</span>
-                  </motion.button>
+                  <div className="flex gap-2 w-full">
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowCamera(true)} 
+                      disabled={status === AppStatus.PROCESSING} 
+                      className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
+                    >
+                       <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                       <Camera size={18} className="relative z-10" /> 
+                       <span className="text-[13px] font-medium uppercase tracking-widest relative z-10">Fiş Tara</span>
+                    </motion.button>
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => fileInputRef.current?.click()} 
+                      disabled={status === AppStatus.PROCESSING} 
+                      className="w-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all"
+                    >
+                       <HardDrive size={18} /> 
+                    </motion.button>
+                  </div>
                 </div>
 
                 <div className="pt-2">
@@ -747,6 +773,13 @@ const App: React.FC = () => {
               availableMonths={availableMonths}
               onClose={() => setShowSyncModal(false)}
               onImport={handleSyncImport}
+            />
+          )}
+
+          {showCamera && (
+            <CameraCapture 
+              onCapture={handleCameraCapture}
+              onClose={() => setShowCamera(false)}
             />
           )}
 
