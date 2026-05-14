@@ -73,16 +73,21 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
   const handleScanSuccess = async (decodedText: string) => {
     try {
-      let dataStr = decodedText;
+      let dataStr = decodedText.trim();
+      
       // Handle prefix if shared as text via WhatsApp
-      if (dataStr.startsWith('BÜTÇE_VERİSİ:')) {
+      // Using regex to be more robust against extra text (timestamps etc)
+      const match = dataStr.match(/BÜTÇE_VERİSİ:(\[.*\]|{.*})/);
+      if (match) {
+        dataStr = match[1];
+      } else if (dataStr.startsWith('BÜTÇE_VERİSİ:')) {
         dataStr = dataStr.replace('BÜTÇE_VERİSİ:', '');
       }
 
       let imported = JSON.parse(dataStr);
       
       // Check if it's compressed format
-      if (Array.isArray(imported) && imported.length > 0 && imported[0].v !== undefined) {
+      if (Array.isArray(imported) && imported.length > 0 && typeof imported[0] === 'object' && 'v' in imported[0]) {
         imported = decompressData(imported);
       }
 
@@ -101,15 +106,29 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
   const handleClipboardImport = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
+      let text = "";
+      
+      // Try modern clipboard API
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          text = await navigator.clipboard.readText();
+        }
+      } catch (e) {
+        console.warn("Clipboard API failed", e);
+      }
+
+      // Fallback to prompt if clipboard API failed or returned empty
+      if (!text) {
+        text = window.prompt("WhatsApp'tan kopyaladığınız kodu buraya yapıştırın:") || "";
+      }
+
+      if (text.trim()) {
         handleScanSuccess(text);
-      } else {
-        setSyncStatus({ success: false, message: "Pano boş veya erişim izni yok." });
+      } else if (text === "") {
+        setSyncStatus({ success: false, message: "Pano boş veya yapıştırma iptal edildi." });
       }
     } catch (err) {
-      setSyncStatus({ success: false, message: "Panoya erişilemedi. Lütfen metni buraya yapıştırın." });
-      // In a real app we might show a textarea here if clipboard API fails
+      setSyncStatus({ success: false, message: "Erişim hatası oluştu." });
     }
   };
 
