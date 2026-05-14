@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, QrCode, Scan, Download, Upload, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Image as ImageIcon, Camera } from 'lucide-react';
+import { X, QrCode, Scan, Download, Upload, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Image as ImageIcon, Camera, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReceiptData } from '../types';
 
@@ -90,6 +90,35 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       }
     } catch (e) {
       setSyncStatus({ success: false, message: "Veri okunamadı veya geçersiz veri içeriyor." });
+    }
+  };
+
+  const handleShareData = async () => {
+    const dataToShare = selectedMonth === 'Hepsi' ? receipts : receipts.filter(r => {
+      const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
+      return rMonth === selectedMonth;
+    });
+
+    const fileName = `butce_paylasim_${new Date().toISOString().split('T')[0]}.json`;
+    const jsonString = JSON.stringify(dataToShare, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const file = new File([blob], fileName, { type: 'application/json' });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Bütçe Veri Paylaşımı',
+          text: 'İşte bütçe verilerim! Uygulamadan "Resim/Dosyadan Al" seçeneği ile yükleyebilirsin.',
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          handleDownloadFile();
+        }
+      }
+    } else {
+      // Fallback to direct download if sharing is not supported
+      handleDownloadFile();
     }
   };
 
@@ -305,20 +334,37 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                         Seçilen dönemdeki kayıt sayısı tek bir QR kod içine sığdırılamaz kadar büyük. 
                       </p>
                       <button 
-                        onClick={handleDownloadFile}
-                        className="w-full py-3 bg-amber-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg"
+                        onClick={handleShareData}
+                        className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg flex items-center justify-center gap-2"
                       >
-                        Dosya Oluştur ve Paylaş (Offline)
+                        <Share2 size={18} />
+                        WhatsApp ile Paylaş
+                      </button>
+                      <button 
+                        onClick={handleDownloadFile}
+                        className="w-full py-2 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-widest hover:underline"
+                      >
+                        Dosya Olarak İndir
                       </button>
                     </div>
                   ) : (
-                    <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl">
-                      <QRCodeSVG 
-                        value={qrValue} 
-                        size={256}
-                        level="L"
-                        includeMargin={true}
-                      />
+                    <div className="space-y-6 flex flex-col items-center">
+                      <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl">
+                        <QRCodeSVG 
+                          value={qrValue} 
+                          size={256}
+                          level="L"
+                          includeMargin={true}
+                        />
+                      </div>
+                      
+                      <button 
+                        onClick={handleShareData}
+                        className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 rounded-full hover:bg-indigo-100 transition-colors"
+                      >
+                        <Share2 size={14} />
+                        WhatsApp / Dosya ile Gönder
+                      </button>
                     </div>
                   )}
                 </div>
