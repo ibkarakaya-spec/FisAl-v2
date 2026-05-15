@@ -81,90 +81,90 @@ export const ManualEntryModal: React.FC<Props> = ({ isOpen, onClose, onAdd, cate
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-800"
+            className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[24px] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-800"
           >
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-slate-800 dark:text-white">Manuel Fiş Ekle</h3>
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-800 dark:text-white">Manuel Fiş Ekle</h3>
               <button 
                 onClick={onClose}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
               >
-                <X size={20} className="text-slate-500" />
+                <X size={18} className="text-slate-500" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 space-y-3">
               {error && (
-                <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-xs font-medium rounded-xl border border-rose-100 dark:border-rose-500/20">
+                <div className="p-2.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-[10px] font-medium rounded-xl border border-rose-100 dark:border-rose-500/20">
                   {error}
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">Ürün / Açıklama</label>
+              <div className="space-y-1">
+                <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 pl-1">Ürün / Açıklama</label>
                 <div className="relative">
-                  <ShoppingBag size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <ShoppingBag size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input 
                     type="text"
                     value={formData.product}
                     onChange={e => setFormData({ ...formData, product: e.target.value })}
                     placeholder="Elma, Süt, Kira vb."
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl py-2.5 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">Market / Mağaza</label>
+              <div className="space-y-1">
+                <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 pl-1">Market / Mağaza</label>
                 <div className="relative">
-                  <Store size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Store size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input 
                     type="text"
                     value={formData.vendor}
                     onChange={e => setFormData({ ...formData, vendor: e.target.value })}
                     placeholder="Bim, Migros, Trendyol vb."
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl py-2.5 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">Kategori</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 pl-1">Kategori</label>
                   <div className="relative">
-                    <Tag size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Tag size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <select 
                       value={formData.category}
                       onChange={e => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl py-2.5 pl-10 pr-4 text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white appearance-none"
                     >
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pl-1">Fiyat (TL)</label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 pl-1">Fiyat (TL)</label>
                   <div className="relative">
-                    <CreditCard size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <CreditCard size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                       type="text"
                       inputMode="decimal"
                       value={formData.total}
                       onChange={e => setFormData({ ...formData, total: e.target.value })}
                       placeholder="0.00"
-                      className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-2">
                 <button 
                   type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-xs shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all"
                 >
-                  <Save size={18} />
+                  <Save size={16} />
                   Kaydet
                 </button>
               </div>
