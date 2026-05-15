@@ -108,7 +108,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       }
       
       // Split into chunks if too large (Sequential QR)
-      const CHUNK_SIZE = 800;
+      const CHUNK_SIZE = 450;
       const chunks = [];
       for (let i = 0; i < fullData.length; i += CHUNK_SIZE) {
         chunks.push(fullData.substring(i, i + CHUNK_SIZE));
@@ -132,7 +132,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const totalExportChunks = useMemo(() => {
     try {
       const fullData = JSON.stringify(exportData);
-      return Math.ceil(fullData.length / 800);
+      return Math.ceil(fullData.length / 450);
     } catch (e) {
       return 1;
     }
@@ -143,10 +143,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     if (mode === 'export' && isSequential) {
       const interval = setInterval(() => {
         setExportChunkIndex(prev => (prev + 1) % totalExportChunks);
-      }, 1000); // Faster cycling for better pickup
+      }, 700); // Balanced cycling speed
       return () => clearInterval(interval);
     }
   }, [mode, isSequential, totalExportChunks]);
+
+  const [lastScannedIndex, setLastScannedIndex] = useState<number | null>(null);
 
   const handleScanSuccess = async (decodedText: string) => {
     try {
@@ -168,7 +170,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
           const payload = parts.slice(3).join('|');
 
           setImportTotal(total);
+          setLastScannedIndex(index);
+          // Visual feedback
+          setTimeout(() => setLastScannedIndex(null), 300);
+
           setImportChunks(prev => {
+            if (prev[index]) return prev; // Already have this part
             const next = { ...prev, [index]: payload };
             
             // Check if we have all chunks
@@ -690,11 +697,11 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                   </p>
                   
                   <div className="space-y-6 flex flex-col items-center">
-                    <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl relative">
+                    <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl relative ring-4 ring-indigo-500/10 transition-all">
                       <QRCodeSVG 
                         value={qrValue} 
                         size={256}
-                        level="L"
+                        level="M"
                         includeMargin={true}
                       />
                       
@@ -783,9 +790,41 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                   )}
                 </div>
 
-                <div className="relative rounded-[32px] overflow-hidden bg-slate-900 aspect-square border border-slate-200 dark:border-slate-800">
+                <div className="relative rounded-[32px] overflow-hidden bg-slate-900 aspect-square border-4 border-slate-200 dark:border-slate-800 shadow-inner group">
                   <div id="qr-reader" className={`w-full h-full ${useFileFallback ? 'hidden' : 'block'}`}></div>
                   
+                  {/* Scanner UI Overlay */}
+                  {!useFileFallback && !syncStatus && isCameraActive && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute inset-0 border-[40px] border-black/30"></div>
+                      <div className="absolute top-[40px] left-[40px] right-[40px] bottom-[40px] border-2 border-indigo-500/50 rounded-2xl overflow-hidden">
+                        <motion.div 
+                          className="w-full h-1 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.8)]"
+                          animate={{ top: ['0%', '100%', '0%'] }}
+                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                          style={{ position: 'absolute', left: 0 }}
+                        />
+                      </div>
+                      
+                      {/* Status indicator */}
+                      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white/90 text-[10px] px-4 py-1.5 rounded-full font-bold uppercase tracking-widest border border-white/10">
+                        {importTotal > 0 ? "Parçalar Toplanıyor..." : "QR Kod Aranıyor..."}
+                      </div>
+
+                      {/* Success Flash */}
+                      <AnimatePresence>
+                        {lastScannedIndex !== null && (
+                          <motion.div 
+                            initial={{ opacity: 0.5 }}
+                            animate={{ opacity: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-emerald-400"
+                          />
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
                   {!useFileFallback && !isCameraActive && !syncStatus && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white/60">
                       <Camera size={48} className="mb-4 opacity-20" />

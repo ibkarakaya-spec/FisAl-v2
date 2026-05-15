@@ -19,9 +19,10 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [autoCaptureEnabled, setAutoCaptureEnabled] = useState(true);
   const [showFlash, setShowFlash] = useState(false);
+  const [stillnessProgress, setStillnessProgress] = useState(0);
   
-  // Detection logic every 300ms
-  const detectionInterval = 300;
+  // Detection logic every 200ms for more fluid feel
+  const detectionInterval = 200;
 
   const startCamera = useCallback(async () => {
     setIsInitializing(true);
@@ -120,14 +121,17 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
         const avgDiff = diff / (data1.length / 16);
         
         // If difference is very low, camera is being held still
-        if (avgDiff < 8) {
+        if (avgDiff < 9) {
           stillnessCountRef.current++;
-          if (stillnessCountRef.current >= 4) { // ~1.2 seconds of stillness
+          setStillnessProgress(stillnessCountRef.current);
+          if (stillnessCountRef.current >= 5) { // ~1 second of stillness
             stillnessCountRef.current = 0;
+            setStillnessProgress(0);
             capture();
           }
         } else {
           stillnessCountRef.current = 0;
+          setStillnessProgress(0);
         }
       }
       
@@ -214,16 +218,38 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
 
           {/* Guide Frame */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className={`w-[80vw] h-[60vh] border-2 rounded-3xl transition-all duration-300 ${stillnessCountRef.current > 0 ? 'border-emerald-500 scale-105 shadow-[0_0_50px_rgba(16,185,129,0.3)]' : 'border-white/30'}`}>
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-white/50 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
-                Fişi Çerçeveye Odaklayın
+            <div className={`w-[85vw] h-[65vh] border-2 rounded-3xl transition-all duration-300 ${stillnessProgress > 0 ? 'border-emerald-500 scale-[1.02] shadow-[0_0_60px_rgba(16,185,129,0.4)]' : 'border-white/30'}`}>
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-colors duration-300 ${stillnessProgress > 0 ? 'text-emerald-400' : 'text-white/50'}`}>
+                  {stillnessProgress > 0 ? 'Sabit Tutun, Algılanıyor...' : 'Fişi Çerçeveye Odaklayın'}
+                </span>
+                
+                {stillnessProgress > 0 && (
+                  <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(stillnessProgress / 5) * 100}%` }}
+                      className="h-full bg-emerald-500"
+                    />
+                  </div>
+                )}
               </div>
               
               {/* Corner markers */}
-              <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-xl" />
-              <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-xl" />
-              <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-xl" />
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-xl" />
+              <div className={`absolute -top-1 -left-1 w-12 h-12 border-t-4 border-l-4 rounded-tl-3xl transition-colors duration-300 ${stillnessProgress > 0 ? 'border-emerald-500' : 'border-white'}`} />
+              <div className={`absolute -top-1 -right-1 w-12 h-12 border-t-4 border-r-4 rounded-tr-3xl transition-colors duration-300 ${stillnessProgress > 0 ? 'border-emerald-500' : 'border-white'}`} />
+              <div className={`absolute -bottom-1 -left-1 w-12 h-12 border-b-4 border-l-4 rounded-bl-3xl transition-colors duration-300 ${stillnessProgress > 0 ? 'border-emerald-500' : 'border-white'}`} />
+              <div className={`absolute -bottom-1 -right-1 w-12 h-12 border-b-4 border-r-4 rounded-br-3xl transition-colors duration-300 ${stillnessProgress > 0 ? 'border-emerald-500' : 'border-white'}`} />
+              
+              {/* Scan line effect when active */}
+              {stillnessProgress > 0 && (
+                <motion.div 
+                  initial={{ top: '0%' }}
+                  animate={{ top: '100%' }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                  className="absolute left-0 right-0 h-0.5 bg-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.8)]"
+                />
+              )}
             </div>
           </div>
 
@@ -255,15 +281,19 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
               </div>
             </button>
 
-            <div className="flex flex-col items-center gap-1">
-              <div className="text-[10px] text-white/60 font-bold uppercase tracking-widest">Sabitleyin</div>
-              {stillnessCountRef.current > 0 && (
-                <div className="flex gap-1">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className={`w-3 h-1.5 rounded-full ${i < stillnessCountRef.current ? 'bg-emerald-500' : 'bg-white/20'}`} />
-                  ))}
-                </div>
-              )}
+            <div className="flex flex-col items-center gap-1 min-w-[80px]">
+              <div className="text-[10px] text-white/60 font-bold uppercase tracking-widest leading-tight">
+                {stillnessProgress > 0 ? 'Algılanıyor' : 'Sabitleyin'}
+              </div>
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div 
+                    key={i} 
+                    animate={i < stillnessProgress ? { scale: [1, 1.3, 1], backgroundColor: '#10b981' } : {}}
+                    className={`w-3 h-1.5 rounded-full transition-colors duration-200 ${i < stillnessProgress ? 'bg-emerald-500' : 'bg-white/20'}`} 
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
