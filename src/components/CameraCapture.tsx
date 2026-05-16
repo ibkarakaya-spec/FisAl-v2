@@ -120,8 +120,29 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
         
         const avgDiff = diff / (data1.length / 16);
         
-        // If difference is very low, camera is being held still
-        if (avgDiff < 9) {
+        // Calculate average brightness to ensure we have a "light" object (receipt)
+        let totalBrightness = 0;
+        for (let i = 0; i < data2.length; i += 16) {
+          totalBrightness += (data2[i] + data2[i+1] + data2[i+2]) / 3;
+        }
+        const avgBrightness = totalBrightness / (data2.length / 16);
+        
+        // If difference is very low AND brightness is high enough (likely a white receipt)
+        // AND not too close to the edge of being completely white (overexposed)
+        // AND the R,G,B values are close (neutral white/gray)
+        let colorVariance = 0;
+        for (let i = 0; i < data2.length; i += 64) { // Sparsely sample for variance
+          const r = data2[i];
+          const g = data2[i+1];
+          const b = data2[i+2];
+          const avg = (r + g + b) / 3;
+          colorVariance += (Math.abs(r - avg) + Math.abs(g - avg) + Math.abs(b - avg)) / 3;
+        }
+        const avgColorVariance = colorVariance / (data2.length / 64);
+        
+        const isLikelyReceipt = avgBrightness > 120 && avgBrightness < 248 && avgColorVariance < 20;
+
+        if (avgDiff < 10 && isLikelyReceipt) {
           stillnessCountRef.current++;
           setStillnessProgress(stillnessCountRef.current);
           if (stillnessCountRef.current >= 5) { // ~1 second of stillness
@@ -283,7 +304,7 @@ export const CameraCapture: React.FC<Props> = ({ onCapture, onClose }) => {
 
             <div className="flex flex-col items-center gap-1 min-w-[80px]">
               <div className="text-[10px] text-white/60 font-bold uppercase tracking-widest leading-tight">
-                {stillnessProgress > 0 ? 'Algılanıyor' : 'Sabitleyin'}
+                {stillnessProgress > 0 ? 'Algılanıyor' : 'Belge Aranıyor'}
               </div>
               <div className="flex gap-1">
                 {[...Array(5)].map((_, i) => (

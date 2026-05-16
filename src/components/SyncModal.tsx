@@ -17,6 +17,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const [selectedMonth, setSelectedMonth] = useState<string>(availableMonths[0] || 'Hepsi');
   const [selectedCategory, setSelectedCategory] = useState<string>('Hepsi');
   const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [scannerHealthMessage, setScannerHealthMessage] = useState<string | null>(null);
 
   const availableCategories = useMemo(() => {
     const cats = new Set(receipts.map(r => r.category));
@@ -32,6 +33,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scannerHealthTimeoutRef = useRef<any>(null);
 
   // Helper to compress/decompress data for QR
   const compressData = (data: ReceiptData[]) => {
@@ -108,7 +110,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       }
       
       // Split into chunks if too large (Sequential QR)
-      const CHUNK_SIZE = 450;
+      const CHUNK_SIZE = 180; // Smaller chunks = Larger squares = Easier scan
       const chunks = [];
       for (let i = 0; i < fullData.length; i += CHUNK_SIZE) {
         chunks.push(fullData.substring(i, i + CHUNK_SIZE));
@@ -123,7 +125,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
 
   const isSequential = useMemo(() => {
     try {
-      return JSON.stringify(exportData).length > 1500;
+      return JSON.stringify(exportData).length > 500; // Trigger sequence earlier for reliability
     } catch (e) {
       return false;
     }
@@ -132,7 +134,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
   const totalExportChunks = useMemo(() => {
     try {
       const fullData = JSON.stringify(exportData);
-      return Math.ceil(fullData.length / 450);
+      return Math.ceil(fullData.length / 180);
     } catch (e) {
       return 1;
     }
@@ -143,7 +145,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     if (mode === 'export' && isSequential) {
       const interval = setInterval(() => {
         setExportChunkIndex(prev => (prev + 1) % totalExportChunks);
-      }, 700); // Balanced cycling speed
+      }, 1300); // Slower cycling for better focus and capture stability
       return () => clearInterval(interval);
     }
   }, [mode, isSequential, totalExportChunks]);
@@ -162,34 +164,44 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       }
 
       // Check for Sequential QR format: SEQ|index|total|data
-      if (dataStr.startsWith('SEQ|')) {
-        const parts = dataStr.split('|');
+      if (dataStr.includes('SEQ|')) {
+        const seqIndex = dataStr.indexOf('SEQ|');
+        const seqData = dataStr.substring(seqIndex);
+        const parts = seqData.split('|');
         if (parts.length >= 4) {
           const index = parseInt(parts[1]);
           const total = parseInt(parts[2]);
           const payload = parts.slice(3).join('|');
 
-          setImportTotal(total);
-          setLastScannedIndex(index);
-          // Visual feedback
-          setTimeout(() => setLastScannedIndex(null), 300);
-
-          setImportChunks(prev => {
-            if (prev[index]) return prev; // Already have this part
-            const next = { ...prev, [index]: payload };
+          if (!isNaN(index) && !isNaN(total)) {
+            setImportTotal(total);
+            setLastScannedIndex(index);
             
-            // Check if we have all chunks
-            if (Object.keys(next).length === total) {
-              const fullData = Array.from({ length: total })
-                .map((_, i) => next[i])
-                .join('');
-              
-              // Process full data
-              setTimeout(() => finalizeImport(fullData), 100);
+            // Haptic/Sound feedback
+            if ('vibrate' in navigator) {
+              try { navigator.vibrate(50); } catch (e) {}
             }
-            return next;
-          });
-          return;
+
+            // Visual feedback
+            setTimeout(() => setLastScannedIndex(null), 300);
+
+            setImportChunks(prev => {
+              if (prev[index]) return prev; // Already have this part
+              const next = { ...prev, [index]: payload };
+              
+              // Check if we have all chunks
+              if (Object.keys(next).length === total) {
+                const fullData = Array.from({ length: total })
+                  .map((_, i) => next[i])
+                  .join('');
+                
+                // Process full data
+                setTimeout(() => finalizeImport(fullData), 100);
+              }
+              return next;
+            });
+            return;
+          }
         }
       }
 
@@ -379,21 +391,28 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
         if (isActuallyScanning) {
           try {
             await scannerRef.current.stop();
-            await new Promise(r => setTimeout(r, 400));
+            await new Promise(r => setTimeout(r, 300)); // Slightly faster reset
           } catch (e) {
             console.warn("Stop before start failed (ignoring)", e);
           }
         }
       }
+      
+      // Clear timeout for health messages if scanning starts
+      if (scannerHealthTimeoutRef.current) clearTimeout(scannerHealthTimeoutRef.current);
+      setScannerHealthMessage(null);
 
       const config = {
-        fps: 15,
+        fps: 30, // Maximize frame rate for detection
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const qrboxSize = Math.floor(minEdge * 0.7);
+          const qrboxSize = Math.floor(minEdge * 0.85); // Even larger box
           return { width: qrboxSize, height: qrboxSize };
         },
-        aspectRatio: 1.0
+        aspectRatio: 1.0,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        }
       };
 
       // Try starting
@@ -402,7 +421,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
           { facingMode: { ideal: "environment" } },
           config,
           handleScanSuccess,
-          () => {} // Ignore scan errors
+          (errorMessage) => {
+            // Track if we are getting frames but no QR
+            if (!scannerHealthMessage && isCameraActive && !syncStatus) {
+              if (!scannerHealthTimeoutRef.current) {
+                scannerHealthTimeoutRef.current = setTimeout(() => {
+                  setScannerHealthMessage("QR Kod bulunamıyor. Işığı artırmayı veya ekranı temizlemeyi deneyin.");
+                }, 8000);
+              }
+            }
+          }
         );
       } catch (err) {
         console.warn("Ideal environment start failed, trying simple...", err);
@@ -476,6 +504,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
     if (!scannerRef.current || isTransitioningRef.current) return;
     
     try {
+      if (scannerHealthTimeoutRef.current) {
+        clearTimeout(scannerHealthTimeoutRef.current);
+        scannerHealthTimeoutRef.current = null;
+      }
+      setScannerHealthMessage(null);
+
       isTransitioningRef.current = true;
       setIsTransitioning(true);
       
@@ -540,6 +574,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
       setSyncStatus({ success: false, message: "Fotoğrafta QR kod bulunamadı veya dosya geçersiz." });
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (scannerHealthTimeoutRef.current) clearTimeout(scannerHealthTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (mode === 'import') {
@@ -645,6 +685,20 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                     </div>
                     <ChevronRight size={18} className="ml-auto opacity-40" />
                   </button>
+
+                  <button 
+                    onClick={handleClipboardImport}
+                    className="flex items-center gap-4 p-5 bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 group"
+                  >
+                    <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                      <Upload size={24} />
+                    </div>
+                    <div className="text-left">
+                      <span className="block font-bold text-sm uppercase tracking-tight">Metin Yapıştır</span>
+                      <span className="text-[11px] opacity-70">WhatsApp'tan kopyaladığınız veriyi buraya yapıştırın</span>
+                    </div>
+                    <ChevronRight size={18} className="ml-auto opacity-40" />
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -699,14 +753,15 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                   <div className="space-y-6 flex flex-col items-center">
                     <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl relative ring-4 ring-indigo-500/10 transition-all">
                       <QRCodeSVG 
+                         id="qr-export-canvas"
                         value={qrValue} 
                         size={256}
-                        level="M"
+                        level="L"
                         includeMargin={true}
                       />
                       
                       {isSequential && (
-                        <div className="absolute top-2 right-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-full animate-pulse">
+                        <div className="absolute top-2 right-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-lg">
                           {((exportChunkIndex % totalExportChunks) + 1)} / {totalExportChunks}
                         </div>
                       )}
@@ -807,8 +862,32 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                       </div>
                       
                       {/* Status indicator */}
-                      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white/90 text-[10px] px-4 py-1.5 rounded-full font-bold uppercase tracking-widest border border-white/10">
-                        {importTotal > 0 ? "Parçalar Toplanıyor..." : "QR Kod Aranıyor..."}
+                      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md text-white/90 text-[10px] px-4 py-2 rounded-full font-bold uppercase tracking-widest border border-white/10 flex flex-col items-center gap-1.5 shadow-2xl">
+                        {importTotal > 0 ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                              <span>Parçalar Alınıyor ({Object.keys(importChunks).length}/{importTotal})</span>
+                            </div>
+                            <div className="flex gap-1 justify-center mt-0.5">
+                              {Array.from({ length: importTotal }).map((_, i) => (
+                                <div 
+                                  key={i} 
+                                  className={`w-4 h-1.5 rounded-full transition-all duration-300 ${importChunks[i] ? 'bg-emerald-500 scale-110 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-white/20'}`}
+                                  title={`Parça ${i+1}`}
+                                />
+                              ))}
+                            </div>
+                            {Object.keys(importChunks).length < importTotal && (
+                              <span className="text-[8px] opacity-60">Eksik parçalar bekleniyor...</span>
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <RefreshCw size={10} className="animate-spin text-indigo-400" />
+                            <span>{scannerHealthMessage || "QR Kod Aranıyor..."}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Success Flash */}
