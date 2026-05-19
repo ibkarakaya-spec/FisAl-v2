@@ -14,6 +14,7 @@ interface SyncModalProps {
 
 export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClose, availableMonths }) => {
   const [mode, setMode] = useState<'selection' | 'export' | 'import'>('selection');
+  const [isFullScreenQr, setIsFullScreenQr] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>(availableMonths[0] || 'Hepsi');
   const [selectedCategory, setSelectedCategory] = useState<string>('Hepsi');
   const [syncStatus, setSyncStatus] = useState<{ success?: boolean; message?: string } | null>(null);
@@ -750,22 +751,37 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
                     {exportData.length} Kayıt Gönderiliyor
                   </p>
                   
-                  <div className="space-y-6 flex flex-col items-center">
-                    <div className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl relative ring-4 ring-indigo-500/10 transition-all">
+                  <div className="space-y-6 flex flex-col items-center w-full">
+                    <div 
+                      onClick={() => setIsFullScreenQr(true)}
+                      className="p-6 bg-white dark:bg-white rounded-3xl shadow-xl relative ring-4 ring-indigo-500/10 transition-all cursor-zoom-in active:scale-95 group"
+                    >
                       <QRCodeSVG 
                          id="qr-export-canvas"
                         value={qrValue} 
-                        size={256}
+                        size={280}
                         level="L"
                         includeMargin={true}
                       />
                       
+                      <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/5 transition-colors rounded-3xl flex items-center justify-center">
+                        <Scan size={32} className="text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+
                       {isSequential && (
                         <div className="absolute top-2 right-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-lg">
                           {((exportChunkIndex % totalExportChunks) + 1)} / {totalExportChunks}
                         </div>
                       )}
                     </div>
+                    
+                    <button 
+                      onClick={() => setIsFullScreenQr(true)}
+                      className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Scan size={14} />
+                      Dokun ve Tam Ekran Yap
+                    </button>
                     
                     {isSequential && (
                       <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
@@ -982,6 +998,69 @@ export const SyncModal: React.FC<SyncModalProps> = ({ receipts, onImport, onClos
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* Full Screen QR Modal */}
+      <AnimatePresence>
+        {isFullScreenQr && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6"
+          >
+            <button 
+              onClick={() => setIsFullScreenQr(false)}
+              className="absolute top-6 right-6 p-4 bg-slate-100 rounded-full text-slate-800 hover:bg-slate-200 transition-colors shadow-lg"
+            >
+              <X size={32} />
+            </button>
+
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-2">Tam Ekran QR Aktif</h2>
+              <p className="text-sm text-slate-500 font-medium max-w-xs mx-auto">
+                Kodu bu boyutta taratmak çok daha hızlı ve başarılı sonuç verir.
+              </p>
+            </div>
+
+            <div className="relative p-8 bg-white rounded-[48px] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] ring-1 ring-slate-200">
+              <QRCodeSVG 
+                value={qrValue} 
+                size={Math.min(window.innerWidth - 80, window.innerHeight - 300)}
+                level="L"
+                includeMargin={true}
+              />
+              
+              {isSequential && (
+                <div className="absolute -top-4 -right-4 bg-indigo-600 text-white text-lg font-black px-6 py-3 rounded-3xl shadow-2xl border-4 border-white">
+                  {((exportChunkIndex % totalExportChunks) + 1)} / {totalExportChunks}
+                </div>
+              )}
+            </div>
+
+            {isSequential && (
+              <div className="mt-12 w-full max-w-xs space-y-4">
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                  <motion.div 
+                    className="bg-indigo-500 h-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${((exportChunkIndex % totalExportChunks) + 1) / totalExportChunks * 100}%` }}
+                  />
+                </div>
+                <p className="text-center text-xs font-bold text-indigo-500 animate-pulse tracking-widest uppercase">
+                  Dinamik QR: Eşiniz kamerasını taranana kadar tutmalı
+                </p>
+              </div>
+            )}
+            
+            <button 
+              onClick={() => setIsFullScreenQr(false)}
+              className="mt-12 bg-slate-900 text-white px-10 py-5 rounded-3xl text-sm font-black uppercase tracking-widest shadow-2xl active:scale-95 transition-all"
+            >
+              Kapat
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
