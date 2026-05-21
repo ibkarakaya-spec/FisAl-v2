@@ -15,7 +15,8 @@ import { ConfirmModal } from './components/ConfirmModal.tsx';
 import { SyncModal } from './components/SyncModal.tsx';
 import { CameraCapture } from './components/CameraCapture.tsx';
 import { ManualEntryModal } from './components/ManualEntryModal.tsx';
-import { Keyboard } from 'lucide-react';
+import { AkbankImportModal } from './components/AkbankImportModal.tsx';
+import { Keyboard, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(false);
@@ -37,6 +38,7 @@ const App: React.FC = () => {
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showAkbankModal, setShowAkbankModal] = useState(false);
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
@@ -675,31 +677,43 @@ const App: React.FC = () => {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setShowCamera(true)} 
                       disabled={status === AppStatus.PROCESSING} 
-                      className="flex-[2] bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative"
+                      className="flex-[1.8] bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-[20px] flex items-center justify-center gap-2 shadow-xl active:shadow-inner transition-all group overflow-hidden relative min-w-[107px]"
                     >
                        <div className="absolute inset-0 bg-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                       <Camera size={18} className="relative z-10" /> 
-                       <span className="text-[13px] font-medium uppercase tracking-widest relative z-10">Fiş Tara</span>
+                       <Camera size={16} className="relative z-10" /> 
+                       <span className="text-[12px] font-medium uppercase tracking-widest relative z-10 font-sans">Fiş Tara</span>
                     </motion.button>
+                    
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowAkbankModal(true)} 
+                      disabled={status === AppStatus.PROCESSING} 
+                      className="flex-[1.5] bg-red-600 hover:bg-red-700 text-white py-3 rounded-[20px] flex items-center justify-center gap-1.5 shadow-xl transition-all relative overflow-hidden text-center min-w-[95px]"
+                    >
+                       <Sparkles size={13} className="animate-pulse text-red-100" />
+                       <span className="text-[11px] font-black uppercase tracking-wider font-sans">Akbank</span>
+                    </motion.button>
+
                     <motion.button 
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setShowManualEntry(true)} 
                       disabled={status === AppStatus.PROCESSING} 
-                      className="w-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                      className="w-11 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
                       title="Manuel Ekle"
                     >
-                       <Keyboard size={18} /> 
+                       <Keyboard size={16} /> 
                     </motion.button>
                     <motion.button 
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => fileInputRef.current?.click()} 
                       disabled={status === AppStatus.PROCESSING} 
-                      className="w-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                      className="w-11 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-[20px] flex items-center justify-center shadow-sm active:shadow-inner transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
                       title="Galeriden Seç"
                     >
-                       <ImageIcon size={18} /> 
+                       <ImageIcon size={16} /> 
                     </motion.button>
                   </div>
                 </div>
@@ -837,6 +851,17 @@ const App: React.FC = () => {
             categories={categories}
             onAdd={(data) => {
               setReceipts(prev => [data, ...prev]);
+            }}
+          />
+
+          <AkbankImportModal 
+            isOpen={showAkbankModal}
+            onClose={() => setShowAkbankModal(false)}
+            categories={categories}
+            onAdd={(data) => {
+              setReceipts(prev => [data, ...prev]);
+              setDashboardMonth("Hepsi");
+              setActiveTab('dashboard');
             }}
           />
 
