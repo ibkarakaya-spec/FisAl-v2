@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2, QrCode, Image as ImageIcon
+  Camera, Loader2, LayoutDashboard, TrendingUp, X, Wallet, Settings as SettingsIcon, Cloud as CloudIcon, HardDrive, Plus, ArrowRight, ScanText, ChevronDown, Trash2, QrCode, Image as ImageIcon,
+  Award, BarChart2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
-import { ReceiptTable } from './components/ReceiptTable.tsx';
+import { ReceiptTable, getCategoryColor } from './components/ReceiptTable.tsx';
 import { ReceiptDetailModal } from './components/ReceiptDetailModal.tsx';
 import { ProductHistory } from './components/ProductHistory.tsx';
 import { BudgetManager } from './components/BudgetManager.tsx';
@@ -218,6 +219,82 @@ const App: React.FC = () => {
     });
 
     return Array.from(monthsSet).sort().reverse();
+  }, [activeReceipts]);
+
+  const dashboardFilteredReceipts = useMemo(() => {
+    return activeReceipts.filter(r => {
+      if (dashboardMonth === 'Hepsi') return true;
+      if (!r.date) return false;
+      let rMonth = '';
+      if (r.date.includes('.')) {
+        const parts = r.date.split('.');
+        rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+      } else if (r.date.includes('-')) {
+        rMonth = r.date.substring(0, 7);
+      }
+      return rMonth === dashboardMonth;
+    });
+  }, [activeReceipts, dashboardMonth]);
+
+  const mostSpentCategory = useMemo(() => {
+    const categoryTotals: Record<string, number> = {};
+    dashboardFilteredReceipts.forEach(r => {
+      const cat = r.category || 'Gıda ve Market';
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + r.total;
+    });
+    let maxCat = '';
+    let maxAmount = 0;
+    Object.entries(categoryTotals).forEach(([cat, amount]) => {
+      if (amount > maxAmount) {
+        maxAmount = amount;
+        maxCat = cat;
+      }
+    });
+    return { category: maxCat || null, amount: maxAmount };
+  }, [dashboardFilteredReceipts]);
+
+  const last7DaysTrend = useMemo(() => {
+    const days = [];
+    const now = new Date();
+    const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      
+      const dayVal = String(d.getDate()).padStart(2, '0');
+      const monthVal = String(d.getMonth() + 1).padStart(2, '0');
+      const yearVal = d.getFullYear();
+      
+      const dotFormat = `${dayVal}.${monthVal}.${yearVal}`;
+      const label = `${dayVal}/${monthVal}`;
+      const dayName = dayNames[d.getDay()];
+      
+      days.push({
+        dotFormat,
+        label,
+        dayName,
+        total: 0
+      });
+    }
+
+    activeReceipts.forEach(r => {
+      if (!r.date) return;
+      let rDate = r.date.trim();
+      if (rDate.includes('-')) {
+        const parts = rDate.split('-');
+        if (parts.length === 3) {
+          rDate = `${parts[2].padStart(2, '0')}.${parts[1].padStart(2, '0')}.${parts[0]}`;
+        }
+      }
+      
+      const match = days.find(d => d.dotFormat === rDate);
+      if (match) {
+        match.total += r.total;
+      }
+    });
+
+    return days;
   }, [activeReceipts]);
 
   useEffect(() => {
@@ -462,31 +539,27 @@ const App: React.FC = () => {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="space-y-1 pt-1"
+                className="space-y-2 pt-1"
               >
-                <div className="flex items-center gap-2 mb-3 px-2">
+                <div className="flex items-center gap-2 mb-2 px-2">
                    <div className="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
                       <ScanText size={14} />
                    </div>
                    <h2 className="text-[15px] font-medium text-slate-800 dark:text-white uppercase tracking-tight">Ana Sayfa</h2>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-1">
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group font-sans">
+                <div className="grid grid-cols-1 gap-2">
+                  {/* Toplam Harcama */}
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group font-sans">
                     <div className="absolute top-0 right-0 p-6 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform">
                       <Wallet size={80} />
                     </div>
                     
-                    <div className="flex justify-between items-start mb-1">
+                    <div className="flex justify-between items-start mb-2">
                       <div className="space-y-0.5">
                         <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Toplam Harcama</span>
                         <div className="text-2xl font-medium tracking-tight tabular-nums flex items-baseline gap-1 font-display">
-                          {activeReceipts
-                            .filter(r => {
-                              if (dashboardMonth === 'Hepsi') return true;
-                              const rMonth = r.date.includes('.') ? `${r.date.split('.')[2]}-${r.date.split('.')[1]}` : r.date.substring(0, 7);
-                              return rMonth === dashboardMonth;
-                            })
+                          {dashboardFilteredReceipts
                             .reduce((s, r) => s + r.total, 0)
                             .toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                           <span className="text-base font-medium text-slate-300 dark:text-slate-700">₺</span>
@@ -515,20 +588,88 @@ const App: React.FC = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col">
                         <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Fiş Sayısı</span>
-                        <span className="text-base font-medium font-display">{activeReceipts.length}</span>
+                        <span className="text-base font-medium font-display">{dashboardFilteredReceipts.length}</span>
                       </div>
                       <div className="h-6 w-px bg-slate-100 dark:bg-slate-800"></div>
                       <div className="flex flex-col">
                         <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Ortalama</span>
                         <span className="text-base font-medium font-display">
-                          {(activeReceipts.length > 0 ? activeReceipts.reduce((s, r) => s + r.total, 0) / activeReceipts.length : 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                          {(dashboardFilteredReceipts.length > 0 ? dashboardFilteredReceipts.reduce((s, r) => s + r.total, 0) / dashboardFilteredReceipts.length : 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
                           <span className="text-[12px] ml-0.5 opacity-40">₺</span>
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 w-full">
+                  {/* En Çok Harcanan Kategori & Son 7 Günlük Trend Row */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Left Card: Most Spent Category */}
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm relative overflow-hidden group flex flex-col justify-between h-[125px]">
+                      <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform">
+                        <Award size={64} />
+                      </div>
+                      
+                      <div>
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest block mb-1">En Çok Harcanan</span>
+                        {mostSpentCategory.category ? (
+                          <div className="space-y-1.5">
+                            <span className={`inline-block text-[10px] font-bold px-2 rounded-md border uppercase tracking-wider ${getCategoryColor(mostSpentCategory.category)}`}>
+                              {mostSpentCategory.category}
+                            </span>
+                            <div className="text-xl font-medium tracking-tight tabular-nums flex items-baseline gap-0.5 font-display text-slate-900 dark:text-white mt-1">
+                              {mostSpentCategory.amount.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}
+                              <span className="text-xs font-semibold text-slate-400">₺</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-400 font-medium">Veri bulunmuyor</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Card: Last 7 Days Trend */}
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden group h-[125px]">
+                      <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-110 transition-transform">
+                        <BarChart2 size={64} />
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest block mb-1">Son 7 Günlük</span>
+                        <div className="text-xl font-medium tracking-tight tabular-nums flex items-baseline gap-0.5 font-display text-slate-900 dark:text-white">
+                          {last7DaysTrend.reduce((sum, d) => sum + d.total, 0).toLocaleString('tr-TR', { minimumFractionDigits: 0 })}
+                          <span className="text-xs font-semibold text-slate-400">₺</span>
+                        </div>
+                      </div>
+                      
+                      {/* Micro Spark bars */}
+                      <div className="flex gap-1 items-end h-[30px] relative z-10">
+                        {last7DaysTrend.map((day, idx) => {
+                          const maxVal = Math.max(...last7DaysTrend.map(d => d.total), 1);
+                          const barHeight = Math.max((day.total / maxVal) * 100, 6);
+                          return (
+                            <div key={idx} className="flex-1 flex flex-col items-center h-full group/day relative cursor-pointer">
+                              <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[8px] font-medium px-1 py-0.5 rounded shadow pointer-events-none opacity-0 group-hover/day:opacity-100 transition-opacity z-20 whitespace-nowrap">
+                                {day.total.toFixed(0)}₺
+                              </div>
+                              <div className="w-full bg-slate-50 dark:bg-slate-800 group-hover/day:bg-indigo-500 rounded-t-[2px] h-full flex items-end">
+                                <motion.div 
+                                  initial={{ height: 0 }}
+                                  animate={{ height: `${barHeight}%` }}
+                                  className={`w-full rounded-t-[2px] transition-colors duration-300 ${day.total > 0 ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-200/50 dark:bg-slate-700/50'}`}
+                                />
+                              </div>
+                              <span className="text-[6px] font-black text-slate-400 mt-1 dark:text-slate-500 tracking-tighter block scale-90">
+                                {day.dayName[0]}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2 w-full mt-1">
                     <motion.button 
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -570,18 +711,7 @@ const App: React.FC = () => {
                       </div>
                   
                     <ReceiptTable 
-                      receipts={activeReceipts.filter(r => {
-                        if (dashboardMonth === 'Hepsi') return true;
-                        if (!r.date) return false;
-                        let rMonth = '';
-                        if (r.date.includes('.')) {
-                          const parts = r.date.split('.');
-                          rMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
-                        } else if (r.date.includes('-')) {
-                          rMonth = r.date.substring(0, 7);
-                        }
-                        return rMonth === dashboardMonth;
-                      })}
+                      receipts={dashboardFilteredReceipts}
                       onDelete={id => setConfirmState({ isOpen: true, title: "Silinsin mi?", message: "Bu kayıt kalıcı olarak kaldırılacak.", onConfirm: () => setReceipts(p => p.filter(r => r.id !== id)) })} 
                       onView={setSelectedReceipt} 
                       onCopySingle={() => Promise.resolve(true)}
