@@ -30,7 +30,11 @@
           "name": "files",
           "accept": [
             "application/pdf",
-            "image/*"
+            ".pdf",
+            "image/*",
+            ".png",
+            ".jpg",
+            ".jpeg"
           ]
         }
       ]
