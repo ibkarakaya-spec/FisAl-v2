@@ -952,39 +952,13 @@ const App: React.FC = () => {
                   
                   <button 
                     onClick={() => {
-                       setShowSettings(false);
-                       setShowSyncModal(true);
+                        setShowSettings(false);
+                        setShowSyncModal(true);
                     }}
                     className="w-full py-3 flex items-center justify-center gap-2.5 bg-indigo-600 text-white rounded-xl text-[11px] font-medium uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-95"
                   >
                     <QrCode size={14} />
                     QR ile Eşitle (Offline)
-                  </button>
-
-                  {!isAppInstalled && (
-                    <button 
-                      onClick={() => {
-                         setShowSettings(false);
-                         triggerInstallPrompt();
-                      }}
-                      className="w-full py-3 flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-505/20 transition-all active:scale-95"
-                    >
-                      <Plus size={14} />
-                      Uygulamayı Cihaza Yükle
-                    </button>
-                  )}
-
-                  <button 
-                    onClick={() => {
-                       setShowAndroidShareTip(true);
-                       localStorage.removeItem('hide_android_share_tip');
-                       setShowSettings(false);
-                       setActiveTab('dashboard');
-                    }}
-                    className="w-full py-3 flex items-center justify-center gap-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/50 dark:border-slate-800 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-all hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95"
-                  >
-                    <Sparkles size={14} />
-                    Android Paylaşım Yardımcısı
                   </button>
 
                   <input type="file" ref={importInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
