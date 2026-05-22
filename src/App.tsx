@@ -16,7 +16,7 @@ import { SyncModal } from './components/SyncModal.tsx';
 import { CameraCapture } from './components/CameraCapture.tsx';
 import { ManualEntryModal } from './components/ManualEntryModal.tsx';
 import { AkbankImportModal } from './components/AkbankImportModal.tsx';
-import { Keyboard, Sparkles } from 'lucide-react';
+import { Keyboard, Sparkles, AlertCircle, Check } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(false);
@@ -39,6 +39,11 @@ const App: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showAkbankModal, setShowAkbankModal] = useState(false);
+  
+  // States for handling Web Share Target (Android PDF / Image / Text share)
+  const [sharedImportData, setSharedImportData] = useState<any | null>(null);
+  const [sharedImportError, setSharedImportError] = useState<string | null>(null);
+  const [isFetchingShared, setIsFetchingShared] = useState(false);
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
@@ -187,6 +192,42 @@ const App: React.FC = () => {
 
   useEffect(() => {
     setIsInitializing(false);
+
+    // Handle PWA Web Share Target URL params (Android PDF/Image/Text share)
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedId = urlParams.get('sharedId');
+    const shareError = urlParams.get('shareError');
+
+    if (sharedId) {
+      setIsFetchingShared(true);
+      setSharedImportError(null);
+      fetch(`/api/shared-target/${sharedId}`)
+        .then((res) => res.json())
+        .then((result) => {
+          if (result.success && result.data) {
+            setSharedImportData(result.data);
+            setActiveTab('dashboard');
+          } else {
+            setSharedImportError(result.error || "Paylaşılan veri süresi dolmuş veya hatalı.");
+          }
+        })
+        .catch((err) => {
+          console.error("Shared target fetch error:", err);
+          setSharedImportError("Paylaşılan veri sunucudan yüklenirken bir hata oluştu.");
+        })
+        .finally(() => {
+          setIsFetchingShared(false);
+          // Clear URL parameters so they don't persist on page refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    } else if (shareError) {
+      setSharedImportError(
+        shareError === 'NoDataExtracted' 
+          ? "Paylaşılan belgeden geçerli bir işlem verisi çıkartılamadı." 
+          : `Paylaşım Hatası: ${decodeURIComponent(shareError)}`
+      );
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   useEffect(() => {
@@ -881,6 +922,149 @@ const App: React.FC = () => {
             onConfirm={confirmState.onConfirm} 
             onCancel={() => setConfirmState(p => ({ ...p, isOpen: false }))} 
           />
+
+          {/* Loading Shared Content Overlay */}
+          {isFetchingShared && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm">
+              <div className="bg-white dark:bg-slate-900 rounded-[30px] p-6 max-w-sm w-full mx-4 flex flex-col items-center text-center shadow-2xl border border-slate-100 dark:border-slate-800">
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-full text-indigo-600 dark:text-indigo-400 mb-4">
+                  <Loader2 size={32} className="animate-spin" />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-2 font-sans">Paylaşılan Akbank Dekontu</h3>
+                <p className="text-[11px] text-slate-500 font-medium">Gemini Yapay Zeka ile paylaşılan PDF/belge çözümleniyor, lütfen bekleyin...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Shared Content Error Modal */}
+          {sharedImportError && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm">
+              <div className="bg-white dark:bg-slate-900 rounded-[30px] p-6 max-w-sm w-full mx-4 flex flex-col items-center text-center shadow-2xl border border-red-500/10">
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-full text-red-600 dark:text-red-400 mb-4 border border-red-500/10 animate-bounce">
+                  <AlertCircle size={32} />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-2 font-sans">Çözümleme Başarısız</h3>
+                <p className="text-xs text-slate-500 mb-6 font-medium leading-relaxed">{sharedImportError}</p>
+                <button
+                  onClick={() => setSharedImportError(null)}
+                  className="w-full py-3 bg-red-600 text-white hover:bg-red-700 rounded-2xl text-[10px] uppercase font-bold tracking-widest active:scale-95 transition-all shadow-lg shadow-red-500/15"
+                >
+                  Kapat
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Shared Content Confirmation Modal */}
+          {sharedImportData && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm animate-fade-in" onClick={() => setSharedImportData(null)} />
+              
+              <div className="bg-white dark:bg-slate-900 rounded-[30px] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-800 w-full max-w-sm max-h-[90vh] flex flex-col">
+                <div className="bg-gradient-to-r from-red-600 to-red-700 p-5 text-white">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Sparkles size={14} className="text-red-200 animate-pulse" />
+                    <span className="text-[9px] uppercase font-black tracking-wider text-red-100">Android Akbank Paylaşımı</span>
+                  </div>
+                  <h3 className="text-md font-black tracking-tight font-sans">Akıllı Transfer Aktarımı</h3>
+                  <p className="text-[10px] text-red-100 mt-1 mb-0 font-medium">Android paylaşım modülü ile gelen Akbank dekontu çözümlendi.</p>
+                </div>
+
+                <div className="p-5 overflow-y-auto space-y-4">
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/10 rounded-2xl p-4 text-emerald-800 dark:text-emerald-400 space-y-3">
+                    <div className="flex items-center gap-1 font-bold text-xs uppercase tracking-wider">
+                      <Check size={14} />
+                      Otomatik Çözümlendi!
+                    </div>
+
+                    <div className="space-y-2 mt-2 p-3 bg-white dark:bg-slate-950 rounded-xl border border-emerald-500/10">
+                      <div className="flex justify-between border-b pb-1 border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 uppercase font-black">Alici / Açiklama</span>
+                        <input
+                          type="text"
+                          value={sharedImportData.vendor}
+                          onChange={(e) => setSharedImportData({ ...sharedImportData, vendor: e.target.value })}
+                          className="text-xs font-bold text-slate-900 dark:text-white uppercase outline-none text-right bg-transparent max-w-[150px] focus:ring-1 focus:ring-indigo-500 rounded font-sans"
+                        />
+                      </div>
+                      <div className="flex justify-between border-b pb-1 border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 uppercase font-black">Miktar</span>
+                        <input
+                          type="number"
+                          value={sharedImportData.total}
+                          onChange={(e) => setSharedImportData({ ...sharedImportData, total: Number(e.target.value) })}
+                          className="text-sm font-black text-rose-600 dark:text-rose-400 outline-none text-right bg-transparent max-w-[110px] focus:ring-1 focus:ring-indigo-500 rounded font-mono"
+                        />
+                      </div>
+                      <div className="flex justify-between border-b pb-1 border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-400 uppercase font-black">İşlem Tarihi</span>
+                        <input
+                          type="text"
+                          value={sharedImportData.date}
+                          onChange={(e) => setSharedImportData({ ...sharedImportData, date: e.target.value })}
+                          className="text-xs font-bold text-slate-900 dark:text-white outline-none text-right bg-transparent max-w-[110px] focus:ring-1 focus:ring-indigo-500 rounded font-sans"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 mt-1 pt-1">
+                        <span className="text-[10px] text-slate-400 uppercase font-black font-sans">Kategori Belirle</span>
+                        <div className="flex flex-wrap gap-1">
+                          {categories.map((cat) => (
+                            <button
+                              key={cat}
+                              onClick={() => setSharedImportData({ ...sharedImportData, category: cat })}
+                              className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg transition-all ${sharedImportData.category === cat ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100"}`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSharedImportData(null)}
+                      className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] uppercase font-bold tracking-widest active:scale-[0.98] transition-all"
+                    >
+                      Vazgeç
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newReceipt: ReceiptData = {
+                          id: Math.random().toString(36).substr(2, 9),
+                          vendor: (sharedImportData.vendor || 'AKBANK PAYLAŞIM').toUpperCase(),
+                          date: sharedImportData.date || new Date().toLocaleDateString('tr-TR'),
+                          total: Number(sharedImportData.total) || 0,
+                          currency: '₺',
+                          category: sharedImportData.category || categories[0],
+                          tax: 0,
+                          items: [
+                            {
+                              name: sharedImportData.vendor ? `${sharedImportData.vendor} Transferi` : 'Akbank Transferi',
+                              price: Number(sharedImportData.total) || 0,
+                              quantity: 1
+                            }
+                          ],
+                          confidence: 1.0,
+                          timestamp: Date.now(),
+                          imageUrl: sharedImportData.imageUrl
+                        };
+                        setReceipts(prev => [newReceipt, ...prev]);
+                        setSharedImportData(null);
+                        setDashboardMonth("Hepsi");
+                        setActiveTab('dashboard');
+                      }}
+                      className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-[10px] uppercase font-bold tracking-widest shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-sans"
+                    >
+                      Onayla ve Ekle
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 w-fit min-w-[200px] z-40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-3xl border border-slate-200/40 dark:border-slate-800/50 rounded-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.3)] px-1 py-1">
             <div className="flex justify-between items-center relative gap-0.5">
