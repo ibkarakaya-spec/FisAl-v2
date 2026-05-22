@@ -17,7 +17,7 @@ root.render(
 
 // PWA Service Worker Registration
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  const registerSW = () => {
     navigator.serviceWorker.register('/sw.js')
       .then(reg => {
         console.log('PWA Service Worker registered successfully:', reg.scope);
@@ -25,5 +25,11 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       .catch(err => {
         console.warn('PWA Service Worker registration failed:', err);
       });
-  });
+  };
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    registerSW();
+  } else {
+    window.addEventListener('load', registerSW);
+  }
 }
