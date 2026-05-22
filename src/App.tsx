@@ -39,6 +39,9 @@ const App: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showAkbankModal, setShowAkbankModal] = useState(false);
+  const [showAndroidShareTip, setShowAndroidShareTip] = useState(() => {
+    return localStorage.getItem('hide_android_share_tip') !== 'true';
+  });
   
   // States for handling Web Share Target (Android PDF / Image / Text share)
   const [sharedImportData, setSharedImportData] = useState<any | null>(null);
@@ -590,6 +593,40 @@ const App: React.FC = () => {
                    </div>
                    <h2 className="text-[15px] font-medium text-slate-800 dark:text-white uppercase tracking-tight">Ana Sayfa</h2>
                 </div>
+
+                {showAndroidShareTip && (
+                  <div className="bg-gradient-to-br from-indigo-50/70 to-blue-50/50 dark:from-slate-900 dark:to-slate-900/60 border border-indigo-100/80 dark:border-indigo-950/40 p-5 rounded-[24px] mb-3 relative overflow-hidden text-slate-700 dark:text-slate-300 font-sans shadow-sm">
+                    <button 
+                      onClick={() => {
+                        setShowAndroidShareTip(false);
+                        localStorage.setItem('hide_android_share_tip', 'true');
+                      }}
+                      className="absolute top-3.5 right-3.5 p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-full transition-all"
+                      title="Kapat"
+                    >
+                      <X size={14} />
+                    </button>
+                    
+                    <div className="flex gap-3 items-start">
+                      <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400 shrink-0">
+                        <Sparkles size={16} className="animate-pulse" />
+                      </div>
+                      <div className="space-y-1.5 pr-6">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1">
+                          Android Paylaşım Rehberi
+                        </h4>
+                        <p className="text-[11px] leading-relaxed font-semibold text-slate-600 dark:text-slate-400">
+                          Telefonunuzdan PDF dekont paylaşırken **FişAI** uygulamasını listede görebilmek için:
+                        </p>
+                        <ul className="list-decimal list-inside text-[11px] font-medium pt-1 space-y-1.5 text-slate-600 dark:text-slate-300">
+                          <li>Uygulamayı tarayıcınızdan (Chrome/Samsung Internet) <span className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">"Ana Ekrana Ekle"</span> veya <span className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">"Yükle"</span> seçeneğiyle telefonunuza yükleyin.</li>
+                          <li>Paylaşım menüsünde FişAI görünmüyorsa; uygulamayı telefonunuzdan tamamen silin ve Chrome ile tekrar yükleyin (Böylece Android paylaşım kaydını yeniler).</li>
+                          <li>Artık herhangi bir PDF veya fiş görselini paylaşırken ve **FişAI**'ı seçtiğinizde yapay zeka tarafından otomatik çözümlenir!</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 gap-2">
                   {/* Toplam Harcama */}
@@ -862,6 +899,19 @@ const App: React.FC = () => {
                   >
                     <QrCode size={14} />
                     QR ile Eşitle (Offline)
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                       setShowAndroidShareTip(true);
+                       localStorage.removeItem('hide_android_share_tip');
+                       setShowSettings(false);
+                       setActiveTab('dashboard');
+                    }}
+                    className="w-full py-3 flex items-center justify-center gap-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/50 dark:border-slate-800 rounded-xl text-[11px] font-medium uppercase tracking-widest transition-all hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95"
+                  >
+                    <Sparkles size={14} />
+                    Android Paylaşım Yardımcısı
                   </button>
 
                   <input type="file" ref={importInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
