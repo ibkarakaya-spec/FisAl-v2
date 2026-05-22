@@ -16,6 +16,7 @@ import { SyncModal } from './components/SyncModal.tsx';
 import { CameraCapture } from './components/CameraCapture.tsx';
 import { ManualEntryModal } from './components/ManualEntryModal.tsx';
 import { AkbankImportModal } from './components/AkbankImportModal.tsx';
+import { PwaInstallModal } from './components/PwaInstallModal.tsx';
 import { Keyboard, Sparkles, AlertCircle, Check } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -46,6 +47,7 @@ const App: React.FC = () => {
   // PWA states for managing direct Android/browser installation
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [showPwaInstallModal, setShowPwaInstallModal] = useState(false);
   
   // States for handling Web Share Target (Android PDF / Image / Text share)
   const [sharedImportData, setSharedImportData] = useState<any | null>(null);
@@ -263,11 +265,12 @@ const App: React.FC = () => {
   }, []);
 
   // Helper function to trigger interactive Android/PWA installation
-  const triggerInstallPrompt = async () => {
-    if (!deferredPrompt) {
-      alert("Bu tarayıcı veya cihaz şu anda otomatik yüklemeyi doğrudan başlatamıyor.\n\nUygulama telefonunuzda zaten kurulu olabilir veya tarayıcınız bu özelliği tam açmamış olabilir.\n\nYÜKLEMEK İÇİN:\n1. Chrome veya Samsung Internet sağ üstündeki Üç Nokta (⋮) simgesine dokunun.\n2. Listedeki 'Ana Ekrana Ekle' veya 'Uygulamayı Yükle' seçeneğini seçin.\n\nEğer paylaş seçeneğinde göremiyorsanız, kurulu olan uygulamayı silip Chrome ile tekrar yüklemeyi deneyin.");
-      return;
-    }
+  const triggerInstallPrompt = () => {
+    setShowPwaInstallModal(true);
+  };
+
+  const handleNativeInstallTrigger = async () => {
+    if (!deferredPrompt) return;
     try {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
@@ -1041,6 +1044,13 @@ const App: React.FC = () => {
             message={confirmState.message} 
             onConfirm={confirmState.onConfirm} 
             onCancel={() => setConfirmState(p => ({ ...p, isOpen: false }))} 
+          />
+
+          <PwaInstallModal
+            isOpen={showPwaInstallModal}
+            onClose={() => setShowPwaInstallModal(false)}
+            deferredPrompt={deferredPrompt}
+            onTriggerInstall={handleNativeInstallTrigger}
           />
 
           {/* Loading Shared Content Overlay */}
