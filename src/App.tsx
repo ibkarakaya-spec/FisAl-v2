@@ -43,6 +43,10 @@ const App: React.FC = () => {
     return localStorage.getItem('hide_android_share_tip') !== 'true';
   });
   
+  // PWA states for managing direct Android/browser installation
+  const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  
   // States for handling Web Share Target (Android PDF / Image / Text share)
   const [sharedImportData, setSharedImportData] = useState<any | null>(null);
   const [sharedImportError, setSharedImportError] = useState<string | null>(null);
@@ -196,6 +200,26 @@ const App: React.FC = () => {
   useEffect(() => {
     setIsInitializing(false);
 
+    // Dynamic listeners for capturing browser PWA installation trigger
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsAppInstalled(true);
+    };
+
+    const checkPwaInstalledMode = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+      setIsAppInstalled(!!isStandalone);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    checkPwaInstalledMode();
+
     // Handle PWA Web Share Target URL params (Android PDF/Image/Text share)
     const urlParams = new URLSearchParams(window.location.search);
     const sharedId = urlParams.get('sharedId');
@@ -231,7 +255,28 @@ const App: React.FC = () => {
       );
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
+
+  // Helper function to trigger interactive Android/PWA installation
+  const triggerInstallPrompt = async () => {
+    if (!deferredPrompt) {
+      alert("Bu tarayıcı veya cihaz şu anda otomatik yüklemeyi doğrudan başlatamıyor.\n\nUygulama telefonunuzda zaten kurulu olabilir veya tarayıcınız bu özelliği tam açmamış olabilir.\n\nYÜKLEMEK İÇİN:\n1. Chrome veya Samsung Internet sağ üstündeki Üç Nokta (⋮) simgesine dokunun.\n2. Listedeki 'Ana Ekrana Ekle' veya 'Uygulamayı Yükle' seçeneğini seçin.\n\nEğer paylaş seçeneğinde göremiyorsanız, kurulu olan uygulamayı silip Chrome ile tekrar yüklemeyi deneyin.");
+      return;
+    }
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`PWA install user choice: ${outcome}`);
+      setDeferredPrompt(null);
+    } catch (err) {
+      console.error("Installation prompt error:", err);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('app_categories', JSON.stringify(categories));
@@ -623,6 +668,18 @@ const App: React.FC = () => {
                           <li>Paylaşım menüsünde FişAI görünmüyorsa; uygulamayı telefonunuzdan tamamen silin ve Chrome ile tekrar yükleyin (Böylece Android paylaşım kaydını yeniler).</li>
                           <li>Artık herhangi bir PDF veya fiş görselini paylaşırken ve **FişAI**'ı seçtiğinizde yapay zeka tarafından otomatik çözümlenir!</li>
                         </ul>
+
+                        {!isAppInstalled && (
+                          <div className="pt-3.5">
+                            <button
+                              onClick={triggerInstallPrompt}
+                              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-3 rounded-2xl flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 transition-all font-sans"
+                            >
+                              <Plus size={14} />
+                              Hemen Telefonuna Yükle (Kur)
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -900,6 +957,19 @@ const App: React.FC = () => {
                     <QrCode size={14} />
                     QR ile Eşitle (Offline)
                   </button>
+
+                  {!isAppInstalled && (
+                    <button 
+                      onClick={() => {
+                         setShowSettings(false);
+                         triggerInstallPrompt();
+                      }}
+                      className="w-full py-3 flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-505/20 transition-all active:scale-95"
+                    >
+                      <Plus size={14} />
+                      Uygulamayı Cihaza Yükle
+                    </button>
+                  )}
 
                   <button 
                     onClick={() => {
