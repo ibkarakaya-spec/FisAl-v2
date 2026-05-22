@@ -3,6 +3,7 @@
   "short_name": "FişAI",
   "description": "Akıllı Fiş Takibi",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",
