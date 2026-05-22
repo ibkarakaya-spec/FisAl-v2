@@ -17,6 +17,7 @@ import { CameraCapture } from './components/CameraCapture.tsx';
 import { ManualEntryModal } from './components/ManualEntryModal.tsx';
 import { AkbankImportModal } from './components/AkbankImportModal.tsx';
 import { PwaInstallModal } from './components/PwaInstallModal.tsx';
+import { GoogleDriveModal } from './components/GoogleDriveModal.tsx';
 import { Keyboard, Sparkles, AlertCircle, Check } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -40,6 +41,7 @@ const App: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showAkbankModal, setShowAkbankModal] = useState(false);
+  const [showDriveModal, setShowDriveModal] = useState(false);
   const [showAndroidShareTip, setShowAndroidShareTip] = useState(() => {
     return localStorage.getItem('hide_android_share_tip') !== 'true';
   });
@@ -507,6 +509,50 @@ const App: React.FC = () => {
     }
   };
 
+  const processDriveFile = async (base64Data: string, mimeType: string, fileName: string) => {
+    setStatus(AppStatus.PROCESSING);
+    setStatusText(`Drive'dan '${fileName}' analiz ediliyor...`);
+    try {
+      const data = await extractReceiptData(base64Data, categories, (msg) => {
+        setStatusText(msg);
+      }, mimeType);
+
+      const rawCategory = data.category || categories[0] || 'Gıda ve Market';
+      const finalCategory = rawCategory.trim();
+      
+      setCategories(prev => {
+        const normalizedCats = prev.map(c => c.trim().toUpperCase());
+        if (!normalizedCats.includes(finalCategory.toUpperCase())) {
+          return [...prev, finalCategory];
+        }
+        return prev;
+      });
+
+      const newReceipt: ReceiptData = {
+        id: Math.random().toString(36).substr(2, 9),
+        vendor: (data.vendor || 'DRIVE BELGESİ').toUpperCase(),
+        date: data.date || new Date().toLocaleDateString('tr-TR'),
+        total: Number(data.total) || 0,
+        currency: '₺',
+        category: finalCategory,
+        tax: 0,
+        items: data.items || [],
+        confidence: 1,
+        timestamp: Date.now(),
+        imageUrl: mimeType.startsWith('image/') ? base64Data : undefined
+      };
+
+      setReceipts(prev => [newReceipt, ...prev]);
+      setDashboardMonth("Hepsi");
+      setActiveTab('dashboard');
+    } catch (err: any) {
+      console.error("Drive işlem hatası:", err);
+      alert(`Dosya işlenirken hata oluştu: ${err.message || err}`);
+    } finally {
+      setStatus(AppStatus.IDLE);
+    }
+  };
+
   const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const files = Array.from(e.target.files) as File[];
@@ -598,6 +644,15 @@ const App: React.FC = () => {
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowDriveModal(true)} 
+                className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 dark:bg-slate-900 rounded-xl transition-all"
+                title="Google Drive"
+              >
+                <CloudIcon size={18} />
+              </motion.button>
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -961,6 +1016,17 @@ const App: React.FC = () => {
                     QR ile Eşitle (Offline)
                   </button>
 
+                  <button 
+                    onClick={() => {
+                        setShowSettings(false);
+                        setShowDriveModal(true);
+                    }}
+                    className="w-full py-3 flex items-center justify-center gap-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl text-[11px] font-medium uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
+                  >
+                    <CloudIcon size={14} />
+                    Google Drive
+                  </button>
+
                   <input type="file" ref={importInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
                 </div>
               </div>
@@ -973,6 +1039,18 @@ const App: React.FC = () => {
               availableMonths={availableMonths}
               onClose={() => setShowSyncModal(false)}
               onImport={handleSyncImport}
+            />
+          )}
+
+          {showDriveModal && (
+            <GoogleDriveModal 
+              isOpen={showDriveModal}
+              onClose={() => setShowDriveModal(false)}
+              receipts={receipts}
+              onImportReceipts={(imported) => {
+                setReceipts(imported);
+              }}
+              onProcessDriveFile={processDriveFile}
             />
           )}
 
