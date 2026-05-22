@@ -4,6 +4,53 @@ import { X, Store, Trash2, ZoomIn, ZoomOut, Maximize2, RotateCw, RefreshCw, Chev
 import { processImage } from '../services/imageProcessing.ts';
 import { motion, AnimatePresence } from 'motion/react';
 
+interface PriceInputProps {
+  value: number;
+  onChange: (val: number) => void;
+  className?: string;
+}
+
+const PriceInput: React.FC<PriceInputProps> = ({ value, onChange, className }) => {
+  const [tempValue, setTempValue] = useState(() => {
+    return value === 0 ? '' : value.toString().replace('.', ',');
+  });
+
+  useEffect(() => {
+    const normalizedTemp = parseFloat(tempValue.replace(',', '.')) || 0;
+    if (normalizedTemp !== value) {
+      setTempValue(value === 0 ? '' : value.toString().replace('.', ','));
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^0-9.,]/g, '');
+    const parts = val.split(/[.,]/);
+    if (parts.length > 2) {
+      val = parts[0] + ',' + parts.slice(1).join('');
+    }
+    setTempValue(val);
+    const parsedNum = parseFloat(val.replace(',', '.')) || 0;
+    onChange(parsedNum);
+  };
+
+  const handleBlur = () => {
+    const parsedNum = parseFloat(tempValue.replace(',', '.')) || 0;
+    setTempValue(parsedNum === 0 ? '' : parsedNum.toString().replace('.', ','));
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      className={className}
+      value={tempValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder="0,00"
+    />
+  );
+};
+
 interface Props {
   receipt: ReceiptData | null;
   categories: string[];
@@ -37,7 +84,8 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
   };
 
   const handleSave = () => {
-    const newTotal = editData.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+    const rawTotal = editData.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+    const newTotal = Math.round(rawTotal * 100) / 100;
     onUpdate({ ...editData, total: newTotal });
     onClose();
   };
@@ -198,12 +246,10 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                           <div className="flex-1 sm:w-28 space-y-1">
                              <label className="text-[8px] font-medium text-slate-500 uppercase tracking-widest ml-1">Fiyat</label>
                              <div className="relative">
-                                <input 
-                                  type="number" 
-                                  step="any"
+                                <PriceInput 
                                   className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 px-3 py-2 pl-7 rounded-xl text-[11px] font-medium text-right text-slate-900 dark:text-white outline-none focus:ring-2 ring-indigo-500/10 tabular-nums" 
                                   value={item.price} 
-                                  onChange={e => handleItemChange(idx, 'price', Number(e.target.value))} 
+                                  onChange={val => handleItemChange(idx, 'price', val)} 
                                 />
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 font-medium text-[10px]">₺</div>
                              </div>
@@ -228,7 +274,7 @@ export const ReceiptDetailModal: React.FC<Props> = ({ receipt, categories, onClo
                   <div className="flex flex-col">
                     <span className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-70 mb-1">Hesaplanan Toplam</span>
                     <div className="text-3xl font-medium tabular-nums font-display">
-                      {editData.items.reduce((s, i) => s + (Number(i.price) || 0), 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-lg ml-1 opacity-50">₺</span>
+                      {(Math.round(editData.items.reduce((s, i) => s + (Number(i.price) || 0), 0) * 100) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}<span className="text-lg ml-1 opacity-50">₺</span>
                     </div>
                   </div>
                   <div className="h-12 w-px bg-white/10 hidden sm:block"></div>

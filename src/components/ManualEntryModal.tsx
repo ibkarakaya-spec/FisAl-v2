@@ -151,8 +151,15 @@ export const ManualEntryModal: React.FC<Props> = ({ isOpen, onClose, onAdd, cate
                       type="text"
                       inputMode="decimal"
                       value={formData.total}
-                      onChange={e => setFormData({ ...formData, total: e.target.value })}
-                      placeholder="0.00"
+                      onChange={e => {
+                        let val = e.target.value.replace(/[^0-9.,]/g, '');
+                        const parts = val.split(/[.,]/);
+                        if (parts.length > 2) {
+                          val = parts[0] + ',' + parts.slice(1).join('');
+                        }
+                        setFormData({ ...formData, total: val });
+                      }}
+                      placeholder="0,00"
                       className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     />
                   </div>

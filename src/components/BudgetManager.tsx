@@ -136,11 +136,17 @@ export const BudgetManager: React.FC<Props> = ({
     return currentMonthReceipts.filter(r => r.category.trim() === selectedCategory);
   }, [currentMonthReceipts, selectedCategory]);
 
-  const categoryTotalSpent = useMemo(() => filteredReceipts.reduce((sum, r) => sum + r.total, 0), [filteredReceipts]);
+  const categoryTotalSpent = useMemo(() => {
+    const rawTotal = filteredReceipts.reduce((sum, r) => sum + r.total, 0);
+    return Math.round(rawTotal * 100) / 100;
+  }, [filteredReceipts]);
   
   const spentPerCategory = useMemo(() => {
     const totals: Record<string, number> = {};
-    currentMonthReceipts.forEach(r => { totals[r.category] = (totals[r.category] || 0) + r.total; });
+    currentMonthReceipts.forEach(r => { 
+      const rawTotal = (totals[r.category] || 0) + r.total;
+      totals[r.category] = Math.round(rawTotal * 100) / 100;
+    });
     return totals;
   }, [currentMonthReceipts]);
 
@@ -154,13 +160,14 @@ export const BudgetManager: React.FC<Props> = ({
       else if (day <= 28) weeks[3] += r.total;
       else weeks[4] += r.total;
     });
-    return weeks;
+    return weeks.map(w => Math.round(w * 100) / 100);
   }, [filteredReceipts]);
 
   const maxWeekly = useMemo(() => Math.max(...weeklyStats, 1), [weeklyStats]);
 
   const handleLimitChange = (category: string, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    const parsedVal = value.replace(',', '.');
+    const numValue = Math.round((parseFloat(parsedVal) || 0) * 100) / 100;
     const newLimits = currentLimits.map(l => l.category === category ? { ...l, limit: numValue } : l);
     setAllLimits(prev => ({ ...prev, [activeMonthKey]: newLimits }));
   };
@@ -547,7 +554,20 @@ export const BudgetManager: React.FC<Props> = ({
           </div>
           <div className="flex items-center gap-1">
             <div className="flex-1 relative">
-              <input placeholder="0.00" className="w-full bg-indigo-50/20 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-right outline-none font-display text-indigo-600" value={manualForm.ucret} onChange={e => setManualForm({...manualForm, ucret: e.target.value})} />
+              <input 
+                placeholder="0,00" 
+                inputMode="decimal"
+                className="w-full bg-indigo-50/20 dark:bg-slate-900/50 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-right outline-none font-display text-indigo-600" 
+                value={manualForm.ucret} 
+                onChange={e => {
+                  let val = e.target.value.replace(/[^0-9.,]/g, '');
+                  const parts = val.split(/[.,]/);
+                  if (parts.length > 2) {
+                    val = parts[0] + ',' + parts.slice(1).join('');
+                  }
+                  setManualForm({...manualForm, ucret: val});
+                }} 
+              />
               <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-indigo-300 font-medium text-[10px]">₺</div>
             </div>
             <motion.button 
