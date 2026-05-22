@@ -22,8 +22,7 @@ const MODELS = [
 export async function extractReceiptData(
   base64Image: string, 
   categories: string[], 
-  onStatusUpdate?: (msg: string) => void,
-  mimeType: string = "image/jpeg"
+  onStatusUpdate?: (msg: string) => void
 ) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -57,7 +56,7 @@ export async function extractReceiptData(
                 Kategoriler: ${categories.join(', ')}` },
               {
                 inlineData: {
-                  mimeType: mimeType,
+                  mimeType: "image/jpeg",
                   data: base64Image.split(',')[1] || base64Image
                 }
               }
