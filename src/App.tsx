@@ -4,7 +4,7 @@ import {
   Award, BarChart2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { extractReceiptData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
+import { extractReceiptData, extractAkbankTextData, DEFAULT_CATEGORIES } from './services/geminiService.ts';
 import { ReceiptData, AppStatus, ThemeMode } from './types.ts';
 import { ReceiptTable, getCategoryColor } from './components/ReceiptTable.tsx';
 import { ReceiptDetailModal } from './components/ReceiptDetailModal.tsx';
@@ -225,6 +225,7 @@ const App: React.FC = () => {
     // Handle PWA Web Share Target URL params (Android PDF/Image/Text share)
     const urlParams = new URLSearchParams(window.location.search);
     const sharedId = urlParams.get('sharedId');
+    const sharedFile = urlParams.get('shared-file');
     const shareError = urlParams.get('shareError');
 
     if (sharedId) {
@@ -249,6 +250,83 @@ const App: React.FC = () => {
           // Clear URL parameters so they don't persist on page refresh
           window.history.replaceState({}, document.title, window.location.pathname);
         });
+    } else if (sharedFile === 'true') {
+      setIsFetchingShared(true);
+      setSharedImportError(null);
+      (async () => {
+        try {
+          if (!('caches' in window)) {
+            throw new Error("Tarayıcınız yerel paylaşım önbelleğini desteklemiyor.");
+          }
+          const cache = await caches.open('pwa-shares');
+          const [metadataRes, fileRes] = await Promise.all([
+            cache.match('/shares/latest-metadata'),
+            cache.match('/shares/latest-file')
+          ]);
+
+          let metadata = { title: '', text: '' };
+          if (metadataRes) {
+            metadata = await metadataRes.json();
+          }
+
+          const savedCategories = localStorage.getItem('app_categories');
+          const currentCats = savedCategories ? JSON.parse(savedCategories) : categories;
+
+          if (fileRes) {
+            const blob = await fileRes.blob();
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64 = reader.result as string;
+              try {
+                setStatus(AppStatus.PROCESSING);
+                setStatusText("Paylaşılan görsel çözümleniyor...");
+                const data = await extractReceiptData(base64, currentCats, (msg) => setStatusText(msg));
+                if (fileRes.headers.get('Content-Type')?.startsWith('image/')) {
+                  data.imageUrl = base64;
+                }
+                setSharedImportData(data);
+                setStatus(AppStatus.IDLE);
+                setActiveTab('dashboard');
+              } catch (err: any) {
+                console.error("Shared file gemini extraction failed:", err);
+                setSharedImportError("Görsel analiz edilemedi: " + (err.message || err));
+                setStatus(AppStatus.IDLE);
+              }
+            };
+            reader.onerror = () => {
+              setSharedImportError("Paylaşılan görsel okunurken hata oluştu.");
+              setIsFetchingShared(false);
+            };
+            reader.readAsDataURL(blob);
+          } else if (metadata.text) {
+            try {
+              setStatus(AppStatus.PROCESSING);
+              setStatusText("Paylaşılan metin çözümleniyor...");
+              const data = await extractAkbankTextData(metadata.text, currentCats, (msg) => setStatusText(msg));
+              setSharedImportData(data);
+              setStatus(AppStatus.IDLE);
+              setActiveTab('dashboard');
+            } catch (err: any) {
+              console.error("Shared text extraction failed:", err);
+              setSharedImportError("Metin analiz edilemedi: " + (err.message || err));
+              setStatus(AppStatus.IDLE);
+            }
+          } else {
+            setSharedImportError("Paylaşılan dosya veya metin bulunamadı.");
+          }
+
+          await Promise.all([
+            cache.delete('/shares/latest-metadata'),
+            cache.delete('/shares/latest-file')
+          ]);
+        } catch (err: any) {
+          console.error("Error reading shared data from client cache:", err);
+          setSharedImportError("Paylaşılan veri okunurken hata oluştu: " + (err.message || err));
+        } finally {
+          setIsFetchingShared(false);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      })();
     } else if (shareError) {
       setSharedImportError(
         shareError === 'NoDataExtracted' 

@@ -29,7 +29,49 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Always let POST and non-GET requests pass directly to the network
+  // Intercept PWA Share Target POST request for offline/client-only support (e.g. on Netlify)
+  if (e.request.method === 'POST' && e.request.url.includes('/api/share-target')) {
+    e.respondWith(
+      (async () => {
+        try {
+          const formData = await e.request.formData();
+          const files = formData.getAll('files');
+          const title = formData.get('title') || '';
+          const text = formData.get('text') || '';
+
+          const cache = await caches.open('pwa-shares');
+
+          if (files && files.length > 0) {
+            const file = files[0];
+            const headers = new Headers();
+            headers.set('Content-Type', file.type || 'image/jpeg');
+            headers.set('X-File-Name', encodeURIComponent(file.name || 'received_shared_file'));
+            await cache.put(
+              new Request('/shares/latest-file'),
+              new Response(file, { headers })
+            );
+          } else {
+            await cache.delete('/shares/latest-file');
+          }
+
+          await cache.put(
+            new Request('/shares/latest-metadata'),
+            new Response(JSON.stringify({ title, text }), {
+              headers: { 'Content-Type': 'application/json' }
+            })
+          );
+
+          return Response.redirect('/?shared-file=true', 303);
+        } catch (err) {
+          console.error('[SW Share Intercept Error]', err);
+          return Response.redirect('/?shareError=' + encodeURIComponent(err.message || 'unknown'), 303);
+        }
+      })()
+    );
+    return;
+  }
+
+  // Always let other non-GET requests pass directly to the network
   if (e.request.method !== 'GET') {
     return;
   }
